@@ -1,0 +1,214 @@
+{% extends "base.html" %}
+{% set title = "New Ticket | TANDO Partner Portal" %}
+
+{% block body %}
+<header class="topbar">
+  <div class="topbar-brand">
+    <img class="brand-logo mark-only" src="{{ url_for('static', filename='img/tando-mark.png') }}" alt="Tando" />
+    <div class="topbar-title">
+      <strong>PARTNER PORTAL</strong>
+      <span>New ticket</span>
+    </div>
+  </div>
+  <div class="account-wrap">
+    <div class="notification-wrap">
+      <button type="button" class="notification-button" data-notification-toggle aria-label="Notifications">
+        {% include "icons/bell.svg" %}
+        {% if unread_notifications %}
+          <span class="notification-badge">{{ unread_notifications }}</span>
+        {% endif %}
+      </button>
+      <div class="notification-menu" data-notification-menu>
+        <div class="notification-menu-head">
+          <strong>Notifications</strong>
+          <span>{{ unread_notifications }} unread</span>
+        </div>
+        <div class="notification-list">
+          {% for notification in recent_notifications %}
+            <form method="post" action="{{ url_for('main.read_notification', notification_id=notification.id) }}">
+              <button type="submit" class="notification-item {% if not notification.is_read %}unread{% endif %}">
+                <strong>{{ notification.title }}</strong>
+                <span>{{ notification.message }}</span>
+                <small>{{ notification.created_at.strftime("%Y-%m-%d %H:%M") }}</small>
+              </button>
+            </form>
+          {% else %}
+            <div class="notification-item">
+              <strong>No notifications yet</strong>
+              <span>You’ll see ticket updates here.</span>
+            </div>
+          {% endfor %}
+        </div>
+      </div>
+    </div>
+    <button type="button" class="account-button" data-account-toggle>
+      <span class="account-icon">{{ user_name[:1] if user_name else "A" }}</span>
+      <span>{{ user_name }}</span>
+    </button>
+    <div class="account-menu" data-account-menu>
+      <div class="account-menu-head">
+        <strong>{{ user_name }}</strong>
+        <span>{{ user_email }}</span>
+      </div>
+      <div class="account-menu-actions">
+        <a class="ghost-btn" href="{{ url_for('main.account_settings') }}">Account Settings</a>
+        <a class="ghost-btn" href="{{ url_for('main.my_company') }}">My company</a>
+        <form method="post" action="{{ url_for('main.logout') }}">
+          <button type="submit" class="primary-btn">Log out</button>
+        </form>
+      </div>
+    </div>
+  </div>
+</header>
+
+<main class="app-shell">
+  <aside class="sidebar">
+    <nav class="side-nav">
+      <a class="nav-item" href="{{ url_for('main.dashboard') }}"><span class="nav-icon">{% include "icons/dashboard.svg" %}</span><span>Dashboard</span></a>
+      <a class="nav-item active" href="{{ url_for('main.tickets') }}"><span class="nav-icon">{% include "icons/tickets.svg" %}</span><span>Tickets</span></a>
+      <a class="nav-item" href="{{ url_for('main.contacts') }}"><span class="nav-icon">{% include "icons/users.svg" %}</span><span>Contacts</span></a>
+      <a class="nav-item" href="{{ url_for('main.users') }}"><span class="nav-icon">{% include "icons/users.svg" %}</span><span>Users</span></a>
+      {% if is_tando_admin %}
+      <a class="nav-item" href="{{ url_for('main.companies') }}"><span class="nav-icon">{% include "icons/companies.svg" %}</span><span>Companies</span></a>
+      <a class="nav-item" href="{{ url_for('main.roles_page') }}"><span class="nav-icon">{% include "icons/roles.svg" %}</span><span>Roles</span></a>
+      {% endif %}
+    </nav>
+    <div class="survey-card">
+      <h4>We value your opinion!</h4>
+      <p>Share your feedback with us.</p>
+      <button type="button" class="primary-btn survey-action">Send Feedback {% include "icons/external-link.svg" %}</button>
+    </div>
+  </aside>
+
+  <section class="content-pane">
+    <div class="page-head">
+      <div>
+        <h2>New Ticket</h2>
+        <p>Raise a support request or report an issue.</p>
+      </div>
+      <a class="ghost-btn" href="{{ url_for('main.tickets') }}">Back to tickets</a>
+    </div>
+
+    {% with messages = get_flashed_messages(with_categories=true) %}
+      {% if messages %}
+        {% for category, message in messages %}
+          <div class="flash flash-{{ category }}">{{ message }}</div>
+        {% endfor %}
+      {% endif %}
+    {% endwith %}
+
+    <form method="post" action="{{ url_for('main.create_ticket') }}" class="ticket-flow">
+      <section class="panel-card ticket-step">
+        <div class="step-badge">1</div>
+        <div class="ticket-step-body">
+          <h3>Ticket Type</h3>
+          <div class="ticket-type-grid">
+            <label class="ticket-type-card">
+              <input type="radio" name="ticket_type" value="issue_report" checked>
+              <div class="ticket-type-head">
+                <span class="ticket-type-icon issue">{% include "icons/ticket-issue.svg" %}</span>
+                <strong>Issue report</strong>
+              </div>
+              <span>Report hardware, firmware, or service issues.</span>
+            </label>
+            <label class="ticket-type-card">
+              <input type="radio" name="ticket_type" value="service_request">
+              <div class="ticket-type-head">
+                <span class="ticket-type-icon service">{% include "icons/ticket-service.svg" %}</span>
+                <strong>Service request</strong>
+              </div>
+              <span>Request assistance for services or account support.</span>
+            </label>
+            <label class="ticket-type-card">
+              <input type="radio" name="ticket_type" value="technical_question">
+              <div class="ticket-type-head">
+                <span class="ticket-type-icon question">{% include "icons/ticket-question.svg" %}</span>
+                <strong>Technical question</strong>
+              </div>
+              <span>Ask about product behaviour, features, or setup.</span>
+            </label>
+            <label class="ticket-type-card">
+              <input type="radio" name="ticket_type" value="product">
+              <div class="ticket-type-head">
+                <span class="ticket-type-icon product">{% include "icons/ticket-product.svg" %}</span>
+                <strong>Product</strong>
+              </div>
+              <span>Product-related request that needs a serial number.</span>
+            </label>
+          </div>
+        </div>
+      </section>
+
+      <section class="panel-card ticket-step">
+        <div class="step-badge">2</div>
+        <div class="ticket-step-body">
+          <h3>Product</h3>
+          <div class="ticket-fields ticket-fields-product">
+            <label class="product-field">
+              <span>Product group <button type="button" class="info-badge" title="Enter the product family or category the ticket is about, for example router, gateway, or tracker.">i</button></span>
+              <input type="text" name="product_group" placeholder="Search product group" />
+            </label>
+            <label data-serial-field>
+              <span>Serial number <button type="button" class="info-badge" title="Enter the device serial number exactly as shown on the label or packaging.">i</button></span>
+              <input type="text" name="serial_number" placeholder="Enter device serial number" />
+            </label>
+          </div>
+        </div>
+      </section>
+
+      <section class="panel-card ticket-step">
+        <div class="step-badge">3</div>
+        <div class="ticket-step-body">
+          <h3>Issue Description</h3>
+          <div class="ticket-fields">
+            <label>
+              <span>Ticket title <button type="button" class="info-badge" title="Write a short, clear summary of the issue, for example: 'Router not connecting' or 'Need firmware update'.">i</button></span>
+              <input type="text" name="title" maxlength="100" placeholder="Short title for the issue" required>
+            </label>
+            <label>
+              <span>Description <button type="button" class="info-badge" title="Describe what happened, when it started, and any steps already tried. The more detail you add, the faster support can help.">i</button></span>
+              <textarea name="description" rows="8" placeholder="Describe the issue in detail"></textarea>
+            </label>
+            {% if ticket_company_required %}
+            <label>
+              <span>Company <button type="button" class="info-badge" title="Select the company this ticket should be attached to. Parent admins can choose any company.">i</button></span>
+              <select name="company_id" required>
+                <option value="">Select company</option>
+                {% if can_view_all %}<option value="0">Parent (Tando)</option>{% endif %}
+                {% for company in companies %}
+                  <option value="{{ company.id }}">{{ company.name }}</option>
+                {% endfor %}
+              </select>
+            </label>
+            {% endif %}
+          </div>
+        </div>
+      </section>
+
+      <div class="ticket-actions">
+        <button type="submit" class="primary-btn">Create Ticket</button>
+        <a class="ghost-btn" href="{{ url_for('main.tickets') }}">Cancel</a>
+      </div>
+    </form>
+  </section>
+</main>
+<script>
+  (() => {
+    const radios = document.querySelectorAll('input[name="ticket_type"]');
+    const serialField = document.querySelector("[data-serial-field]");
+    const serialInput = serialField ? serialField.querySelector('input[name="serial_number"]') : null;
+
+    const syncSerialField = () => {
+      const selected = document.querySelector('input[name="ticket_type"]:checked');
+      const isProduct = selected && selected.value === "product";
+      if (!serialField || !serialInput) return;
+      serialField.style.display = isProduct ? "grid" : "none";
+      serialInput.required = isProduct;
+      if (!isProduct) serialInput.value = "";
+    };
+
+    radios.forEach((radio) => radio.addEventListener("change", syncSerialField));
+    syncSerialField();
+  })();
+</script>
+{% endblock %}

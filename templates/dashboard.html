@@ -1,0 +1,188 @@
+{% extends "base.html" %}
+{% set title = "Dashboard | TANDO Partner Portal" %}
+
+{% block body %}
+<header class="topbar">
+  <div class="topbar-brand">
+    <img class="brand-logo mark-only" src="{{ url_for('static', filename='img/tando-mark.png') }}" alt="Tando" />
+    <div class="topbar-title">
+      <strong>PARTNER PORTAL</strong>
+      <span>Dashboard</span>
+    </div>
+  </div>
+  <div class="account-wrap">
+    <div class="notification-wrap">
+      <button type="button" class="notification-button" data-notification-toggle aria-label="Notifications">
+        {% include "icons/bell.svg" %}
+        {% if unread_notifications %}
+          <span class="notification-badge">{{ unread_notifications }}</span>
+        {% endif %}
+      </button>
+      <div class="notification-menu" data-notification-menu>
+        <div class="notification-menu-head">
+          <strong>Notifications</strong>
+          <span>{{ unread_notifications }} unread</span>
+        </div>
+        <div class="notification-list">
+          {% for notification in recent_notifications %}
+            <form method="post" action="{{ url_for('main.read_notification', notification_id=notification.id) }}">
+              <button type="submit" class="notification-item {% if not notification.is_read %}unread{% endif %}">
+                <strong>{{ notification.title }}</strong>
+                <span>{{ notification.message }}</span>
+                <small>{{ notification.created_at.strftime("%Y-%m-%d %H:%M") }}</small>
+              </button>
+            </form>
+          {% else %}
+            <div class="notification-item">
+              <strong>No notifications yet</strong>
+              <span>You’ll see ticket updates here.</span>
+            </div>
+          {% endfor %}
+        </div>
+      </div>
+    </div>
+    <button type="button" class="account-button" data-account-toggle>
+      <span class="account-icon">{{ user_name[:1] if user_name else "A" }}</span>
+      <span>{{ user_name }}</span>
+    </button>
+    <div class="account-menu" data-account-menu>
+      <div class="account-menu-head">
+        <strong>{{ user_name }}</strong>
+        <span>{{ user_email }}</span>
+      </div>
+      <div class="account-menu-actions">
+        <a class="ghost-btn" href="{{ url_for('main.account_settings') }}">Account Settings</a>
+        <a class="ghost-btn" href="{{ url_for('main.my_company') }}">My Company</a>
+        <form method="post" action="{{ url_for('main.logout') }}">
+          <button type="submit" class="primary-btn">Log out</button>
+        </form>
+      </div>
+    </div>
+  </div>
+</header>
+<main class="app-shell">
+  <aside class="sidebar">
+    <nav class="side-nav">
+      <a class="nav-item {% if active_nav == 'dashboard' %}active{% endif %}" href="{{ url_for('main.dashboard') }}"><span class="nav-icon">{% include "icons/dashboard.svg" %}</span><span>Dashboard</span></a>
+      <a class="nav-item {% if active_nav == 'tickets' %}active{% endif %}" href="{{ url_for('main.tickets') }}"><span class="nav-icon">{% include "icons/tickets.svg" %}</span><span>Tickets</span></a>
+      <a class="nav-item {% if active_nav == 'contacts' %}active{% endif %}" href="{{ url_for('main.contacts') }}"><span class="nav-icon">{% include "icons/users.svg" %}</span><span>Contacts</span></a>
+      <a class="nav-item {% if active_nav == 'users' %}active{% endif %}" href="{{ url_for('main.users') }}"><span class="nav-icon">{% include "icons/users.svg" %}</span><span>Users</span></a>
+      {% if is_tando_admin %}
+      <a class="nav-item {% if active_nav == 'companies' %}active{% endif %}" href="{{ url_for('main.companies') }}"><span class="nav-icon">{% include "icons/companies.svg" %}</span><span>Companies</span></a>
+      <a class="nav-item {% if active_nav == 'roles' %}active{% endif %}" href="{{ url_for('main.roles_page') }}"><span class="nav-icon">{% include "icons/roles.svg" %}</span><span>Roles</span></a>
+      {% endif %}
+    </nav>
+    <div class="survey-card">
+      <h4>We value your opinion!</h4>
+      <p>Share your feedback with us.</p>
+      <button type="button" class="primary-btn survey-action">Send Feedback {% include "icons/external-link.svg" %}</button>
+    </div>
+  </aside>
+
+  <section class="content-pane">
+    <div class="page-head">
+      <div>
+        <h2>Dashboard</h2>
+        <p>{% if is_tando_admin %}Seeded admin access is active. Tando can see everything, while company admins stay scoped to their tenant.{% else %}Track your support activity and jump into open tickets quickly.{% endif %}</p>
+      </div>
+    </div>
+
+    {% with messages = get_flashed_messages(with_categories=true) %}
+      {% if messages %}
+        {% for category, message in messages %}
+          <div class="flash flash-{{ category }}">{{ message }}</div>
+        {% endfor %}
+      {% endif %}
+    {% endwith %}
+
+    {% if is_tando_admin %}
+      <div class="stats-grid">
+        <article class="stat-card accent"><span class="label">Companies</span><strong class="value">{{ company_count }}</strong><span class="hint">Registered tenants</span></article>
+        <article class="stat-card"><span class="label">Tickets</span><strong class="value">{{ ticket_count }}</strong><span class="hint">Visible tickets</span></article>
+        <article class="stat-card"><span class="label">Active Users</span><strong class="value">{{ user_count }}</strong><span class="hint">Account holders</span></article>
+        <article class="stat-card"><span class="label">Devices</span><strong class="value">{{ device_count }}</strong><span class="hint">Connected devices</span></article>
+      </div>
+
+      <div class="dashboard-panels">
+        <section class="panel-card">
+          <h3>Ticket Health</h3>
+          <div class="panel-list">
+            <div class="panel-row"><span>Open tickets</span><strong>{{ open_ticket_count }}</strong></div>
+            <div class="panel-row"><span>Closed tickets</span><strong>{{ closed_ticket_count }}</strong></div>
+            <div class="panel-row"><span>Tickets awaiting response</span><strong>{{ pending_ticket_count }}</strong></div>
+          </div>
+        </section>
+        <section class="panel-card">
+          <h3>Device Snapshot</h3>
+          <div class="panel-list">
+            <div class="panel-row"><span>Registered devices</span><strong>{{ device_count }}</strong></div>
+            <div class="panel-row"><span>Online now</span><strong>{{ device_online_count }}</strong></div>
+            <div class="panel-row"><span>Offline</span><strong>{{ device_offline_count }}</strong></div>
+          </div>
+        </section>
+      </div>
+    {% else %}
+      <div class="dashboard-grid dashboard-grid-support">
+        <section class="panel-card support-summary-card">
+          <div class="panel-head">
+            <div>
+              <h3>Your Tickets</h3>
+            </div>
+            <a class="ghost-btn" href="{{ url_for('main.tickets') }}">Show more</a>
+          </div>
+          <div class="support-metrics">
+            <div class="support-metric">
+              <strong class="support-value accent">{{ pending_my_action_count }}</strong>
+              <span>Awaiting your response</span>
+            </div>
+            <div class="support-divider"></div>
+            <div class="support-metric">
+              <strong class="support-value">{{ open_my_tickets_count }}</strong>
+              <span>Open tickets</span>
+            </div>
+          </div>
+        </section>
+
+        <section class="panel-card support-card">
+          <h3>Need support?</h3>
+          <p>Open a ticket when you need technical help, follow-up, or a quick response from our team.</p>
+          <div class="dashboard-link-list">
+            <a class="primary-btn" href="{{ url_for('main.new_ticket') }}">Create ticket</a>
+            <a class="ghost-btn" href="{{ url_for('main.tickets') }}">View tickets</a>
+          </div>
+        </section>
+      </div>
+
+      <section class="panel-card dashboard-info-card">
+        <div class="panel-head">
+          <h3>Learn more about Tando</h3>
+          <a class="ghost-btn" href="https://tando.co.ke" target="_blank" rel="noopener noreferrer">Visit website</a>
+        </div>
+        <div class="dashboard-info-layout">
+          <div>
+            <p>Discover our products, services, and the telematics solutions we support on the official Tando website.</p>
+            <p class="hint-text">Use this space for announcements, product guides, and feature highlights as your portal grows.</p>
+          </div>
+        </div>
+      </section>
+
+      <section class="panel-card">
+        <div class="panel-head">
+          <h3>Recent tickets</h3>
+          <a class="ghost-btn" href="{{ url_for('main.tickets') }}">All tickets</a>
+        </div>
+        <div class="panel-list">
+          {% for ticket in recent_tickets %}
+            <div class="panel-row">
+              <span>{{ ticket.title }}</span>
+              <strong>{{ ticket.status|title }}</strong>
+            </div>
+          {% else %}
+            <div class="empty-state">No tickets yet.</div>
+          {% endfor %}
+        </div>
+      </section>
+    {% endif %}
+  </section>
+</main>
+{% endblock %}

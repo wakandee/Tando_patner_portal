@@ -1,0 +1,205 @@
+{% extends "base.html" %}
+{% set title = "Users | TANDO Partner Portal" %}
+
+{% block body %}
+<header class="topbar">
+  <div class="topbar-brand">
+    <img class="brand-logo mark-only" src="{{ url_for('static', filename='img/tando-mark.png') }}" alt="Tando" />
+    <div class="topbar-title">
+      <strong>PARTNER PORTAL</strong>
+      <span>Users</span>
+    </div>
+  </div>
+  <div class="account-wrap">
+    <div class="notification-wrap">
+      <button type="button" class="notification-button" data-notification-toggle aria-label="Notifications">
+        {% include "icons/bell.svg" %}
+        {% if unread_notifications %}
+          <span class="notification-badge">{{ unread_notifications }}</span>
+        {% endif %}
+      </button>
+      <div class="notification-menu" data-notification-menu>
+        <div class="notification-menu-head">
+          <strong>Notifications</strong>
+          <span>{{ unread_notifications }} unread</span>
+        </div>
+        <div class="notification-list">
+          {% for notification in recent_notifications %}
+            <form method="post" action="{{ url_for('main.read_notification', notification_id=notification.id) }}">
+              <button type="submit" class="notification-item {% if not notification.is_read %}unread{% endif %}">
+                <strong>{{ notification.title }}</strong>
+                <span>{{ notification.message }}</span>
+                <small>{{ notification.created_at.strftime("%Y-%m-%d %H:%M") }}</small>
+              </button>
+            </form>
+          {% else %}
+            <div class="notification-item">
+              <strong>No notifications yet</strong>
+              <span>You’ll see ticket updates here.</span>
+            </div>
+          {% endfor %}
+        </div>
+      </div>
+    </div>
+    <button type="button" class="account-button" data-account-toggle>
+      <span class="account-icon">{{ user_name[:1] if user_name else "A" }}</span>
+      <span>{{ user_name }}</span>
+    </button>
+    <div class="account-menu" data-account-menu>
+      <div class="account-menu-head">
+        <strong>{{ user_name }}</strong>
+        <span>{{ user_email }}</span>
+      </div>
+      <div class="account-menu-actions">
+        <a class="ghost-btn" href="{{ url_for('main.account_settings') }}">Account Settings</a>
+        <a class="ghost-btn" href="{{ url_for('main.my_company') }}">My company</a>
+        <form method="post" action="{{ url_for('main.logout') }}">
+          <button type="submit" class="primary-btn">Log out</button>
+        </form>
+      </div>
+    </div>
+  </div>
+</header>
+<main class="app-shell">
+  <aside class="sidebar">
+    <nav class="side-nav">
+      <a class="nav-item" href="{{ url_for('main.dashboard') }}"><span class="nav-icon">{% include "icons/dashboard.svg" %}</span><span>Dashboard</span></a>
+      <a class="nav-item" href="{{ url_for('main.tickets') }}"><span class="nav-icon">{% include "icons/tickets.svg" %}</span><span>Tickets</span></a>
+      <a class="nav-item" href="{{ url_for('main.contacts') }}"><span class="nav-icon">{% include "icons/users.svg" %}</span><span>Contacts</span></a>
+      <a class="nav-item active" href="{{ url_for('main.users') }}"><span class="nav-icon">{% include "icons/users.svg" %}</span><span>Users</span></a>
+      {% if is_tando_admin %}
+      <a class="nav-item" href="{{ url_for('main.companies') }}"><span class="nav-icon">{% include "icons/companies.svg" %}</span><span>Companies</span></a>
+      <a class="nav-item" href="{{ url_for('main.roles_page') }}"><span class="nav-icon">{% include "icons/roles.svg" %}</span><span>Roles</span></a>
+      {% endif %}
+    </nav>
+    <div class="survey-card">
+      <h4>We value your opinion!</h4>
+      <p>Share your feedback with us.</p>
+      <button type="button" class="primary-btn survey-action">Send Feedback {% include "icons/external-link.svg" %}</button>
+    </div>
+  </aside>
+
+  <section class="content-pane">
+    <div class="page-head">
+      <div>
+        <h2>Users</h2>
+        <p>Create and manage users with company-scoped RBAC.</p>
+      </div>
+      <button class="primary-btn" type="button" data-dialog-open="user-dialog">Add User</button>
+    </div>
+
+    {% with messages = get_flashed_messages(with_categories=true) %}
+      {% if messages %}
+        {% for category, message in messages %}
+          <div class="flash flash-{{ category }}">{{ message }}</div>
+        {% endfor %}
+      {% endif %}
+    {% endwith %}
+
+    <div class="table-card">
+      <table class="data-table">
+        <thead>
+          <tr><th>#</th><th>Name</th><th>Email</th><th>Company</th><th>Role</th><th>Status</th><th>Actions</th></tr>
+        </thead>
+        <tbody>
+          {% for item in users_list %}
+            <tr>
+              <td>{{ users_page.start_index + loop.index0 if users_page else loop.index }}</td>
+              <td>{{ item.full_name }}</td>
+              <td>{{ item.email }}</td>
+              <td>{{ item.company.name if item.company else "-" }}</td>
+              <td>{{ item.role.name|title }}</td>
+              <td>{{ "Active" if item.is_active else "Disabled" }}</td>
+              <td class="table-actions">
+                <button class="ghost-btn" type="button" data-dialog-open="edit-user-{{ item.id }}">Edit</button>
+                <form method="post" action="{{ url_for('main.toggle_user', user_id=item.id) }}">
+                  <button class="ghost-btn" type="submit">{{ "Disable" if item.is_active else "Enable" }}</button>
+                </form>
+              </td>
+            </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+    {% if users_page and users_page.total_pages > 1 %}
+      <div class="table-pagination">
+        <span>Showing {{ users_page.start_index }}-{{ users_page.start_index + users_page.items|length - 1 if users_page.items else 0 }} of {{ users_page.total }}</span>
+        <div class="pagination-actions">
+          <a class="ghost-btn {% if not users_page.has_prev %}disabled{% endif %}" href="{{ url_for('main.users', page=users_page.prev_page) }}">Previous</a>
+          <span>Page {{ users_page.page }} of {{ users_page.total_pages }}</span>
+          <a class="ghost-btn {% if not users_page.has_next %}disabled{% endif %}" href="{{ url_for('main.users', page=users_page.next_page) }}">Next</a>
+        </div>
+      </div>
+    {% endif %}
+  </section>
+</main>
+
+<dialog id="user-dialog" class="portal-dialog">
+  <form method="post" action="{{ url_for('main.create_user') }}" class="dialog-card">
+    <div class="dialog-head">
+      <h3>Create User</h3>
+      <button type="button" class="ghost-btn" data-dialog-close>Close</button>
+    </div>
+    <label><span>Full name</span><input type="text" name="full_name" required></label>
+    <label><span>Email</span><input type="email" name="email" required></label>
+    <label><span>Temp password</span><input type="password" name="password" required></label>
+    <label>
+      <span>Company</span>
+      <select name="company_id" required>
+        <option value="">Select company</option>
+        {% if can_use_parent_company %}<option value="0">Parent (Tando)</option>{% endif %}
+        {% for company in companies %}
+          <option value="{{ company.id }}">{{ company.name }}</option>
+        {% endfor %}
+      </select>
+    </label>
+    <label>
+      <span>Role</span>
+      <select name="role_id" required>
+        <option value="">Select role</option>
+        {% for role in roles %}
+          <option value="{{ role.id }}">{{ role.name|title }}</option>
+        {% endfor %}
+      </select>
+    </label>
+    <div class="dialog-actions">
+      <button type="button" class="ghost-btn" data-dialog-close>Cancel</button>
+      <button type="submit" class="primary-btn">Create User</button>
+    </div>
+  </form>
+</dialog>
+
+{% for item in users_list %}
+<dialog id="edit-user-{{ item.id }}" class="portal-dialog">
+  <form method="post" action="{{ url_for('main.edit_user', user_id=item.id) }}" class="dialog-card">
+    <div class="dialog-head">
+      <h3>Edit User</h3>
+      <button type="button" class="ghost-btn" data-dialog-close>Close</button>
+    </div>
+    <label><span>Full name</span><input type="text" name="full_name" value="{{ item.full_name }}"></label>
+    <label><span>Email</span><input type="email" name="email" value="{{ item.email }}"></label>
+    <label>
+      <span>Company</span>
+      <select name="company_id">
+        {% if can_use_parent_company %}<option value="0" {% if item.company and item.company.code == 'tando' %}selected{% endif %}>Parent (Tando)</option>{% endif %}
+        {% for company in companies %}
+          <option value="{{ company.id }}" {% if item.company and item.company.id == company.id %}selected{% endif %}>{{ company.name }}</option>
+        {% endfor %}
+      </select>
+    </label>
+    <label>
+      <span>Role</span>
+      <select name="role_id">
+        {% for role in roles %}
+          <option value="{{ role.id }}" {% if item.role.id == role.id %}selected{% endif %}>{{ role.name|title }}</option>
+        {% endfor %}
+      </select>
+    </label>
+    <div class="dialog-actions">
+      <button type="button" class="ghost-btn" data-dialog-close>Cancel</button>
+      <button type="submit" class="primary-btn">Save Changes</button>
+    </div>
+  </form>
+</dialog>
+{% endfor %}
+{% endblock %}

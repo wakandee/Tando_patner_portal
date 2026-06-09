@@ -1,0 +1,20 @@
+<svg width="1024" height="256" viewBox="0 0 1024 256" fill="none" xmlns="http://www.w3.org/2000/svg" role="img" aria-labelledby="title desc">
+  <title id="title">Tando</title>
+  <desc id="desc">Tando logo with orange hexagon mark and blue wordmark.</desc>
+  <defs>
+    <style>
+      .mark { fill: #ff5a26; }
+      .word { fill: #2a7397; }
+    </style>
+  </defs>
+  <g transform="translate(34 18)">
+    <polygon class="mark" points="140,0 160,11.5 160,34.5 140,46 120,34.5 120,11.5" />
+    <polygon class="mark" points="68,42 88,53.5 88,76.5 68,88 48,76.5 48,53.5" />
+    <polygon class="mark" points="140,42 160,53.5 160,76.5 140,88 120,76.5 120,53.5" />
+    <polygon class="mark" points="212,42 232,53.5 232,76.5 212,88 192,76.5 192,53.5" />
+    <polygon class="mark" points="20,84 40,95.5 40,118.5 20,130 0,118.5 0,95.5" />
+    <polygon class="mark" points="92,84 112,95.5 112,118.5 92,130 72,118.5 72,95.5" />
+    <polygon class="mark" points="164,84 184,95.5 184,118.5 164,130 144,118.5 144,95.5" />
+  </g>
+  <text class="word" x="310" y="172" font-family="Segoe UI, Arial, sans-serif" font-size="130" font-weight="800" letter-spacing="2">TANDO</text>
+</svg>

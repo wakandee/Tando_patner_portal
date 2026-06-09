@@ -1,0 +1,181 @@
+{% extends "base.html" %}
+{% set title = "Account Settings | TANDO Partner Portal" %}
+
+{% block body %}
+<header class="topbar">
+  <div class="topbar-brand">
+    <img class="brand-logo mark-only" src="{{ url_for('static', filename='img/tando-mark.png') }}" alt="Tando" />
+    <div class="topbar-title">
+      <strong>PARTNER PORTAL</strong>
+      <span>Account settings</span>
+    </div>
+  </div>
+  <div class="account-wrap">
+    <div class="notification-wrap">
+      <button type="button" class="notification-button" data-notification-toggle aria-label="Notifications">
+        {% include "icons/bell.svg" %}
+        {% if unread_notifications %}
+          <span class="notification-badge">{{ unread_notifications }}</span>
+        {% endif %}
+      </button>
+      <div class="notification-menu" data-notification-menu>
+        <div class="notification-menu-head">
+          <strong>Notifications</strong>
+          <span>{{ unread_notifications }} unread</span>
+        </div>
+        <div class="notification-list">
+          {% for notification in recent_notifications %}
+            <form method="post" action="{{ url_for('main.read_notification', notification_id=notification.id) }}">
+              <button type="submit" class="notification-item {% if not notification.is_read %}unread{% endif %}">
+                <strong>{{ notification.title }}</strong>
+                <span>{{ notification.message }}</span>
+                <small>{{ notification.created_at.strftime("%Y-%m-%d %H:%M") }}</small>
+              </button>
+            </form>
+          {% else %}
+            <div class="notification-item">
+              <strong>No notifications yet</strong>
+              <span>You’ll see ticket updates here.</span>
+            </div>
+          {% endfor %}
+        </div>
+      </div>
+    </div>
+    <button type="button" class="account-button" data-account-toggle>
+      <span class="account-icon">{{ user_name[:1] if user_name else "A" }}</span>
+      <span>{{ user_name }}</span>
+    </button>
+    <div class="account-menu" data-account-menu>
+      <div class="account-menu-head">
+        <strong>{{ user_name }}</strong>
+        <span>{{ user_email }}</span>
+      </div>
+      <div class="account-menu-actions">
+        <a class="ghost-btn" href="{{ url_for('main.account_settings') }}">Account Settings</a>
+        <a class="ghost-btn" href="{{ url_for('main.my_company') }}">My company</a>
+        <form method="post" action="{{ url_for('main.logout') }}">
+          <button type="submit" class="primary-btn">Log out</button>
+        </form>
+      </div>
+    </div>
+  </div>
+</header>
+
+<main class="app-shell">
+  <aside class="sidebar">
+    <nav class="side-nav">
+      <a class="nav-item" href="{{ url_for('main.dashboard') }}"><span class="nav-icon">{% include "icons/dashboard.svg" %}</span><span>Dashboard</span></a>
+      <a class="nav-item" href="{{ url_for('main.tickets') }}"><span class="nav-icon">{% include "icons/tickets.svg" %}</span><span>Tickets</span></a>
+      <a class="nav-item" href="{{ url_for('main.contacts') }}"><span class="nav-icon">{% include "icons/users.svg" %}</span><span>Contacts</span></a>
+      <a class="nav-item" href="{{ url_for('main.users') }}"><span class="nav-icon">{% include "icons/users.svg" %}</span><span>Users</span></a>
+      {% if is_tando_admin %}
+      <a class="nav-item" href="{{ url_for('main.companies') }}"><span class="nav-icon">{% include "icons/companies.svg" %}</span><span>Companies</span></a>
+      <a class="nav-item" href="{{ url_for('main.roles_page') }}"><span class="nav-icon">{% include "icons/roles.svg" %}</span><span>Roles</span></a>
+      {% endif %}
+    </nav>
+    <div class="survey-card">
+      <h4>We value your opinion!</h4>
+      <p>Share your feedback with us.</p>
+      <button type="button" class="primary-btn survey-action">Send Feedback {% include "icons/external-link.svg" %}</button>
+    </div>
+  </aside>
+
+  <section class="content-pane standalone-page">
+    <div class="page-head">
+      <div>
+        <h2>Account and security</h2>
+        <p>Manage your profile and password.</p>
+      </div>
+    </div>
+
+    {% with messages = get_flashed_messages(with_categories=true) %}
+      {% if messages %}
+        {% for category, message in messages %}
+          <div class="flash flash-{{ category }}">{{ message }}</div>
+        {% endfor %}
+      {% endif %}
+    {% endwith %}
+
+    <div class="account-stack">
+      <section class="panel-card" id="name">
+        <div class="panel-head">
+          <h3>Account</h3>
+          <a href="#" class="ghost-btn">Privacy policy</a>
+        </div>
+        <div class="account-card-grid">
+          <div class="account-summary">
+            <div class="panel-row">
+              <span>Name</span><strong>{{ user_name }}</strong>
+            </div>
+            <div class="panel-row">
+              <span>Email</span><strong>{{ user_email }}</strong>
+            </div>
+          </div>
+          <div class="account-action-row">
+            <button type="button" class="ghost-btn" data-dialog-open="name-dialog">Change</button>
+          </div>
+        </div>
+      </section>
+
+      <section class="panel-card" id="password">
+        <div class="panel-head">
+          <h3>Password</h3>
+        </div>
+        <div class="account-card-grid password-card">
+          <div class="account-summary">
+            <div class="panel-row">
+              <span>Password</span>
+              <div class="password-meta">
+                <strong>**************</strong>
+                <span>Created {{ user.created_at.strftime("%Y-%m-%d") if user.created_at else "-" }}</span>
+              </div>
+            </div>
+          </div>
+          <div class="account-action-row">
+            <button type="button" class="ghost-btn" data-dialog-open="password-dialog">Change</button>
+          </div>
+        </div>
+      </section>
+    </div>
+  </section>
+</main>
+
+<dialog id="name-dialog" class="portal-dialog">
+  <form method="post" action="{{ url_for('main.update_account_name') }}" class="dialog-card">
+    <div class="dialog-head">
+      <h3>Change your name</h3>
+      <button type="button" class="ghost-btn" data-dialog-close>Cancel</button>
+    </div>
+    <label>
+      <span>Full name *</span>
+      <input type="text" name="full_name" value="{{ user_name }}" required>
+    </label>
+    <div class="dialog-actions">
+      <button type="submit" class="primary-btn">Save</button>
+      <button type="button" class="ghost-btn" data-dialog-close>Cancel</button>
+    </div>
+  </form>
+</dialog>
+
+<dialog id="password-dialog" class="portal-dialog">
+  <form method="post" action="{{ url_for('main.update_account_password') }}" class="dialog-card">
+    <div class="dialog-head">
+      <h3>Change password</h3>
+      <button type="button" class="ghost-btn" data-dialog-close>Cancel</button>
+    </div>
+    <label>
+      <span>Current password *</span>
+      <input type="password" name="current_password" required>
+    </label>
+    <label>
+      <span>New password *</span>
+      <input type="password" name="new_password" data-password-min="6" required>
+    </label>
+    <p class="hint-text">Minimum {{ password_min_length }} characters.</p>
+    <div class="dialog-actions">
+      <button type="submit" class="primary-btn">Confirm</button>
+      <button type="button" class="ghost-btn" data-dialog-close>Cancel</button>
+    </div>
+  </form>
+</dialog>
+{% endblock %}

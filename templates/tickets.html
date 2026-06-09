@@ -1,0 +1,210 @@
+{% extends "base.html" %}
+{% set title = "Tickets | TANDO Partner Portal" %}
+
+{% block body %}
+<header class="topbar">
+  <div class="topbar-brand">
+    <img class="brand-logo mark-only" src="{{ url_for('static', filename='img/tando-mark.png') }}" alt="Tando" />
+    <div class="topbar-title">
+      <strong>PARTNER PORTAL</strong>
+      <span>Tickets</span>
+    </div>
+  </div>
+  <div class="account-wrap">
+    <div class="notification-wrap">
+      <button type="button" class="notification-button" data-notification-toggle aria-label="Notifications">
+        {% include "icons/bell.svg" %}
+        {% if unread_notifications %}
+          <span class="notification-badge">{{ unread_notifications }}</span>
+        {% endif %}
+      </button>
+      <div class="notification-menu" data-notification-menu>
+        <div class="notification-menu-head">
+          <strong>Notifications</strong>
+          <span>{{ unread_notifications }} unread</span>
+        </div>
+        <div class="notification-list">
+          {% for notification in recent_notifications %}
+            <form method="post" action="{{ url_for('main.read_notification', notification_id=notification.id) }}">
+              <button type="submit" class="notification-item {% if not notification.is_read %}unread{% endif %}">
+                <strong>{{ notification.title }}</strong>
+                <span>{{ notification.message }}</span>
+                <small>{{ notification.created_at.strftime("%Y-%m-%d %H:%M") }}</small>
+              </button>
+            </form>
+          {% else %}
+            <div class="notification-item">
+              <strong>No notifications yet</strong>
+              <span>You’ll see ticket updates here.</span>
+            </div>
+          {% endfor %}
+        </div>
+      </div>
+    </div>
+    <button type="button" class="account-button" data-account-toggle>
+      <span class="account-icon">{{ user_name[:1] if user_name else "A" }}</span>
+      <span>{{ user_name }}</span>
+    </button>
+    <div class="account-menu" data-account-menu>
+      <div class="account-menu-head">
+        <strong>{{ user_name }}</strong>
+        <span>{{ user_email }}</span>
+      </div>
+      <div class="account-menu-actions">
+        <a class="ghost-btn" href="{{ url_for('main.account_settings') }}">Account Settings</a>
+        <a class="ghost-btn" href="{{ url_for('main.my_company') }}">My company</a>
+        <form method="post" action="{{ url_for('main.logout') }}">
+          <button type="submit" class="primary-btn">Log out</button>
+        </form>
+      </div>
+    </div>
+  </div>
+</header>
+<main class="app-shell">
+  <aside class="sidebar">
+    <nav class="side-nav">
+      <a class="nav-item" href="{{ url_for('main.dashboard') }}"><span class="nav-icon">{% include "icons/dashboard.svg" %}</span><span>Dashboard</span></a>
+      <a class="nav-item active" href="{{ url_for('main.tickets') }}"><span class="nav-icon">{% include "icons/tickets.svg" %}</span><span>Tickets</span></a>
+      <a class="nav-item" href="{{ url_for('main.contacts') }}"><span class="nav-icon">{% include "icons/users.svg" %}</span><span>Contacts</span></a>
+      <a class="nav-item" href="{{ url_for('main.users') }}"><span class="nav-icon">{% include "icons/users.svg" %}</span><span>Users</span></a>
+      {% if is_tando_admin %}
+      <a class="nav-item" href="{{ url_for('main.companies') }}"><span class="nav-icon">{% include "icons/companies.svg" %}</span><span>Companies</span></a>
+      <a class="nav-item" href="{{ url_for('main.roles_page') }}"><span class="nav-icon">{% include "icons/roles.svg" %}</span><span>Roles</span></a>
+      {% endif %}
+    </nav>
+    <div class="survey-card">
+      <h4>We value your opinion!</h4>
+      <p>Share your feedback with us.</p>
+      <button type="button" class="primary-btn survey-action">Send Feedback {% include "icons/external-link.svg" %}</button>
+    </div>
+  </aside>
+
+  <section class="content-pane">
+    <div class="page-head">
+      <div>
+        <h2>Tickets</h2>
+        <p>{{ "View and manage support tickets across all accounts." if can_view_all else "View and manage your support tickets." }}</p>
+      </div>
+      <a class="primary-btn" href="{{ url_for('main.new_ticket') }}">Add Ticket</a>
+    </div>
+
+    <form method="get" class="ticket-filters panel-card">
+      <label>
+        <span>Ticket Id</span>
+        <input type="text" name="ticket_id" value="{{ filters.ticket_id }}" placeholder="Ticket Id">
+      </label>
+      <label>
+        <span>Status</span>
+        <select name="status">
+          <option value="">All</option>
+          <option value="open" {% if filters.status == "open" %}selected{% endif %}>Open</option>
+          <option value="pending" {% if filters.status == "pending" %}selected{% endif %}>Pending</option>
+          <option value="closed" {% if filters.status == "closed" %}selected{% endif %}>Closed</option>
+        </select>
+      </label>
+      <label>
+        <span>Type</span>
+        <select name="ticket_type">
+          <option value="">All</option>
+          <option value="issue_report" {% if filters.ticket_type == "issue_report" %}selected{% endif %}>Issue report</option>
+          <option value="service_request" {% if filters.ticket_type == "service_request" %}selected{% endif %}>Service request</option>
+          <option value="technical_question" {% if filters.ticket_type == "technical_question" %}selected{% endif %}>Technical question</option>
+          <option value="product" {% if filters.ticket_type == "product" %}selected{% endif %}>Product</option>
+        </select>
+      </label>
+      <label>
+        <span>Product</span>
+        <input type="text" name="product_group" value="{{ filters.product_group }}" placeholder="Product">
+      </label>
+      <label>
+        <span>Created on</span>
+        <input type="date" name="created_on" value="{{ filters.created_on }}">
+      </label>
+      {% if can_view_all %}
+      <label>
+        <span>Company</span>
+        <select name="company_id">
+          <option value="">All</option>
+          {% for company in companies %}
+            <option value="{{ company.id }}" {% if filters.company_id == company.id|string %}selected{% endif %}>{{ company.name }}</option>
+          {% endfor %}
+        </select>
+      </label>
+      {% endif %}
+      <div class="ticket-filter-actions">
+        <button type="submit" class="primary-btn">Filter</button>
+        <a class="ghost-btn" href="{{ url_for('main.tickets') }}">Clear filters</a>
+      </div>
+    </form>
+
+    <div class="table-card">
+      <table class="data-table">
+        <thead>
+          <tr>
+            <th>#</th>
+            <th>Title</th>
+            <th>Type</th>
+            {% if can_view_all %}<th>Company</th>{% endif %}
+            <th>Serial No.</th>
+            <th>Status</th>
+            <th>Created</th>
+            {% if can_view_all %}<th>Actions</th>{% endif %}
+          </tr>
+        </thead>
+        <tbody>
+          {% for ticket in tickets_list %}
+            <tr>
+              <td>{{ tickets_page.start_index + loop.index0 if tickets_page else loop.index }}</td>
+              <td>{{ ticket.title }}</td>
+              <td>{{ ticket_type_labels.get(ticket.ticket_type, ticket.ticket_type|title) }}</td>
+              {% if can_view_all %}<td>{{ ticket.company.name }}</td>{% endif %}
+              <td>{{ ticket.serial_number or "-" }}</td>
+              <td>{{ ticket.status }}</td>
+              <td>{{ ticket.created_at.strftime("%Y-%m-%d") }}</td>
+              {% if can_view_all %}<td><button class="ghost-btn" type="button" data-dialog-open="response-{{ ticket.id }}">Respond</button></td>{% endif %}
+            </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+    {% if tickets_page and tickets_page.total_pages > 1 %}
+      <div class="table-pagination">
+        <span>Showing {{ tickets_page.start_index }}-{{ tickets_page.start_index + tickets_page.items|length - 1 if tickets_page.items else 0 }} of {{ tickets_page.total }}</span>
+        <div class="pagination-actions">
+          <a class="ghost-btn {% if not tickets_page.has_prev %}disabled{% endif %}" href="{{ url_for('main.tickets', page=tickets_page.prev_page, ticket_id=filters.ticket_id, status=filters.status, ticket_type=filters.ticket_type, product_group=filters.product_group, created_on=filters.created_on, company_id=filters.company_id) }}">Previous</a>
+          <span>Page {{ tickets_page.page }} of {{ tickets_page.total_pages }}</span>
+          <a class="ghost-btn {% if not tickets_page.has_next %}disabled{% endif %}" href="{{ url_for('main.tickets', page=tickets_page.next_page, ticket_id=filters.ticket_id, status=filters.status, ticket_type=filters.ticket_type, product_group=filters.product_group, created_on=filters.created_on, company_id=filters.company_id) }}">Next</a>
+        </div>
+      </div>
+    {% endif %}
+
+    {% if can_view_all %}
+      {% for ticket in tickets_list %}
+        <dialog class="portal-dialog" id="response-{{ ticket.id }}">
+          <form method="post" action="{{ url_for('main.respond_to_ticket', ticket_id=ticket.id) }}" class="dialog-card">
+            <div class="dialog-head">
+              <h3>Respond to ticket</h3>
+              <button type="button" class="ghost-btn" data-dialog-close>Close</button>
+            </div>
+            <label>
+              <span>Status</span>
+              <select name="status">
+                <option value="open" {% if ticket.status == "open" %}selected{% endif %}>Open</option>
+                <option value="pending" {% if ticket.status == "pending" %}selected{% endif %}>Pending</option>
+                <option value="closed" {% if ticket.status == "closed" %}selected{% endif %}>Closed</option>
+              </select>
+            </label>
+            <label>
+              <span>Response</span>
+              <textarea name="message" rows="5" placeholder="Write your update to the requester" required></textarea>
+            </label>
+            <div class="dialog-actions">
+              <button type="submit" class="primary-btn">Send update</button>
+            </div>
+          </form>
+        </dialog>
+      {% endfor %}
+    {% endif %}
+  </section>
+</main>
+{% endblock %}

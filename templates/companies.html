@@ -1,0 +1,159 @@
+{% extends "base.html" %}
+{% set title = "Companies | TANDO Partner Portal" %}
+
+{% block body %}
+<header class="topbar">
+  <div class="topbar-brand">
+    <img class="brand-logo mark-only" src="{{ url_for('static', filename='img/tando-mark.png') }}" alt="Tando" />
+    <div class="topbar-title">
+      <strong>PARTNER PORTAL</strong>
+      <span>Companies</span>
+    </div>
+  </div>
+  <div class="account-wrap">
+    <div class="notification-wrap">
+      <button type="button" class="notification-button" data-notification-toggle aria-label="Notifications">
+        {% include "icons/bell.svg" %}
+        {% if unread_notifications %}
+          <span class="notification-badge">{{ unread_notifications }}</span>
+        {% endif %}
+      </button>
+      <div class="notification-menu" data-notification-menu>
+        <div class="notification-menu-head">
+          <strong>Notifications</strong>
+          <span>{{ unread_notifications }} unread</span>
+        </div>
+        <div class="notification-list">
+          {% for notification in recent_notifications %}
+            <form method="post" action="{{ url_for('main.read_notification', notification_id=notification.id) }}">
+              <button type="submit" class="notification-item {% if not notification.is_read %}unread{% endif %}">
+                <strong>{{ notification.title }}</strong>
+                <span>{{ notification.message }}</span>
+                <small>{{ notification.created_at.strftime("%Y-%m-%d %H:%M") }}</small>
+              </button>
+            </form>
+          {% else %}
+            <div class="notification-item">
+              <strong>No notifications yet</strong>
+              <span>You’ll see ticket updates here.</span>
+            </div>
+          {% endfor %}
+        </div>
+      </div>
+    </div>
+    <button type="button" class="account-button" data-account-toggle>
+      <span class="account-icon">{{ user_name[:1] if user_name else "A" }}</span>
+      <span>{{ user_name }}</span>
+    </button>
+    <div class="account-menu" data-account-menu>
+      <div class="account-menu-head">
+        <strong>{{ user_name }}</strong>
+        <span>{{ user_email }}</span>
+      </div>
+      <div class="account-menu-actions">
+        <a class="ghost-btn" href="{{ url_for('main.account_settings') }}">Account Settings</a>
+        <a class="ghost-btn" href="{{ url_for('main.my_company') }}">My company</a>
+        <form method="post" action="{{ url_for('main.logout') }}">
+          <button type="submit" class="primary-btn">Log out</button>
+        </form>
+      </div>
+    </div>
+  </div>
+</header>
+<main class="app-shell">
+  <aside class="sidebar">
+    <nav class="side-nav">
+      <a class="nav-item" href="{{ url_for('main.dashboard') }}"><span class="nav-icon">{% include "icons/dashboard.svg" %}</span><span>Dashboard</span></a>
+      <a class="nav-item" href="{{ url_for('main.tickets') }}"><span class="nav-icon">{% include "icons/tickets.svg" %}</span><span>Tickets</span></a>
+      <a class="nav-item" href="{{ url_for('main.contacts') }}"><span class="nav-icon">{% include "icons/users.svg" %}</span><span>Contacts</span></a>
+      <a class="nav-item" href="{{ url_for('main.users') }}"><span class="nav-icon">{% include "icons/users.svg" %}</span><span>Users</span></a>
+      <a class="nav-item active" href="{{ url_for('main.companies') }}"><span class="nav-icon">{% include "icons/companies.svg" %}</span><span>Companies</span></a>
+      <a class="nav-item" href="{{ url_for('main.roles_page') }}"><span class="nav-icon">{% include "icons/roles.svg" %}</span><span>Roles</span></a>
+    </nav>
+    <div class="survey-card">
+      <h4>We value your opinion!</h4>
+      <p>Share your feedback with us.</p>
+      <button type="button" class="primary-btn survey-action">Send Feedback {% include "icons/external-link.svg" %}</button>
+    </div>
+  </aside>
+
+  <section class="content-pane">
+    <div class="page-head">
+      <div>
+        <h2>Companies</h2>
+        <p>Register a customer company and its first administrator.</p>
+      </div>
+      <button class="primary-btn" type="button" data-dialog-open="company-dialog">Add Company</button>
+    </div>
+
+    {% with messages = get_flashed_messages(with_categories=true) %}
+      {% if messages %}
+        {% for category, message in messages %}
+          <div class="flash flash-{{ category }}">{{ message }}</div>
+        {% endfor %}
+      {% endif %}
+    {% endwith %}
+
+    <div class="table-card">
+      <table class="data-table">
+        <thead>
+          <tr><th>#</th><th>Name</th><th>Code</th><th>Contact</th><th>Status</th><th>Action</th></tr>
+        </thead>
+        <tbody>
+          {% for company in companies_list %}
+            <tr>
+              <td>{{ companies_page.start_index + loop.index0 if companies_page else loop.index }}</td>
+              <td>{{ company.name }}</td>
+              <td>{{ company.code }}</td>
+              <td>{{ company.contact_email or "-" }}</td>
+              <td>{{ "Active" if company.is_active else "Disabled" }}</td>
+              <td class="table-actions">
+                <form method="post" action="{{ url_for('main.toggle_company', company_id=company.id) }}">
+                  <button class="ghost-btn" type="submit">{{ "Disable" if company.is_active else "Enable" }}</button>
+                </form>
+              </td>
+            </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+    {% if companies_page and companies_page.total_pages > 1 %}
+      <div class="table-pagination">
+        <span>Showing {{ companies_page.start_index }}-{{ companies_page.start_index + companies_page.items|length - 1 if companies_page.items else 0 }} of {{ companies_page.total }}</span>
+        <div class="pagination-actions">
+          <a class="ghost-btn {% if not companies_page.has_prev %}disabled{% endif %}" href="{{ url_for('main.companies', page=companies_page.prev_page) }}">Previous</a>
+          <span>Page {{ companies_page.page }} of {{ companies_page.total_pages }}</span>
+          <a class="ghost-btn {% if not companies_page.has_next %}disabled{% endif %}" href="{{ url_for('main.companies', page=companies_page.next_page) }}">Next</a>
+        </div>
+      </div>
+    {% endif %}
+  </section>
+</main>
+
+<dialog id="company-dialog" class="portal-dialog">
+  <form method="post" action="{{ url_for('main.create_company') }}" class="dialog-card">
+    <div class="dialog-head">
+      <h3>Create Company + Admin</h3>
+      <button type="button" class="ghost-btn" data-dialog-close>Close</button>
+    </div>
+    <label><span>Company name</span><input type="text" name="company_name" required></label>
+    <label><span>Company code</span><input type="text" name="company_code" required></label>
+    <label><span>Admin full name</span><input type="text" name="admin_name" required></label>
+    <label><span>Admin email</span><input type="email" name="admin_email" required></label>
+    <label><span>Admin password</span><input type="password" name="admin_password" required></label>
+    <label>
+      <span>Admin role</span>
+      <select name="admin_role_id" required>
+        <option value="">Select role</option>
+        {% for role in roles %}
+          <option value="{{ role.id }}">{{ role.name|title }}</option>
+        {% endfor %}
+      </select>
+    </label>
+    <div class="dialog-actions">
+      <button type="button" class="ghost-btn" data-dialog-close>Cancel</button>
+      <button type="submit" class="primary-btn">Create Company</button>
+    </div>
+  </form>
+</dialog>
+{% endblock %}

@@ -1,0 +1,184 @@
+{% extends "base.html" %}
+{% set title = "Roles | TANDO Partner Portal" %}
+
+{% block body %}
+<header class="topbar">
+  <div class="topbar-brand">
+    <img class="brand-logo mark-only" src="{{ url_for('static', filename='img/tando-mark.png') }}" alt="Tando" />
+    <div class="topbar-title">
+      <strong>PARTNER PORTAL</strong>
+      <span>Roles</span>
+    </div>
+  </div>
+  <div class="account-wrap">
+    <div class="notification-wrap">
+      <button type="button" class="notification-button" data-notification-toggle aria-label="Notifications">
+        {% include "icons/bell.svg" %}
+        {% if unread_notifications %}
+          <span class="notification-badge">{{ unread_notifications }}</span>
+        {% endif %}
+      </button>
+      <div class="notification-menu" data-notification-menu>
+        <div class="notification-menu-head">
+          <strong>Notifications</strong>
+          <span>{{ unread_notifications }} unread</span>
+        </div>
+        <div class="notification-list">
+          {% for notification in recent_notifications %}
+            <form method="post" action="{{ url_for('main.read_notification', notification_id=notification.id) }}">
+              <button type="submit" class="notification-item {% if not notification.is_read %}unread{% endif %}">
+                <strong>{{ notification.title }}</strong>
+                <span>{{ notification.message }}</span>
+                <small>{{ notification.created_at.strftime("%Y-%m-%d %H:%M") }}</small>
+              </button>
+            </form>
+          {% else %}
+            <div class="notification-item">
+              <strong>No notifications yet</strong>
+              <span>You’ll see ticket updates here.</span>
+            </div>
+          {% endfor %}
+        </div>
+      </div>
+    </div>
+    <button type="button" class="account-button" data-account-toggle>
+      <span class="account-icon">{{ user_name[:1] if user_name else "A" }}</span>
+      <span>{{ user_name }}</span>
+    </button>
+    <div class="account-menu" data-account-menu>
+      <div class="account-menu-head">
+        <strong>{{ user_name }}</strong>
+        <span>{{ user_email }}</span>
+      </div>
+      <div class="account-menu-actions">
+        <a class="ghost-btn" href="{{ url_for('main.account_settings') }}">Account Settings</a>
+        <a class="ghost-btn" href="{{ url_for('main.my_company') }}">My company</a>
+        <form method="post" action="{{ url_for('main.logout') }}">
+          <button type="submit" class="primary-btn">Log out</button>
+        </form>
+      </div>
+    </div>
+  </div>
+</header>
+<main class="app-shell">
+  <aside class="sidebar">
+    <nav class="side-nav">
+      <a class="nav-item" href="{{ url_for('main.dashboard') }}"><span class="nav-icon">{% include "icons/dashboard.svg" %}</span><span>Dashboard</span></a>
+      <a class="nav-item" href="{{ url_for('main.tickets') }}"><span class="nav-icon">{% include "icons/tickets.svg" %}</span><span>Tickets</span></a>
+      <a class="nav-item" href="{{ url_for('main.contacts') }}"><span class="nav-icon">{% include "icons/users.svg" %}</span><span>Contacts</span></a>
+      <a class="nav-item" href="{{ url_for('main.users') }}"><span class="nav-icon">{% include "icons/users.svg" %}</span><span>Users</span></a>
+      {% if is_tando_admin %}
+      <a class="nav-item" href="{{ url_for('main.companies') }}"><span class="nav-icon">{% include "icons/companies.svg" %}</span><span>Companies</span></a>
+      <a class="nav-item active" href="{{ url_for('main.roles_page') }}"><span class="nav-icon">{% include "icons/roles.svg" %}</span><span>Roles</span></a>
+      {% endif %}
+    </nav>
+    <div class="survey-card">
+      <h4>We value your opinion!</h4>
+      <p>Share your feedback with us.</p>
+      <button type="button" class="primary-btn survey-action">Send Feedback {% include "icons/external-link.svg" %}</button>
+    </div>
+  </aside>
+
+  <section class="content-pane">
+    <div class="page-head">
+      <div>
+        <h2>Roles</h2>
+        <p>Create and manage role permissions for RBAC.</p>
+      </div>
+      <button class="primary-btn" type="button" data-dialog-open="role-dialog">Add Role</button>
+    </div>
+
+    {% with messages = get_flashed_messages(with_categories=true) %}
+      {% if messages %}
+        {% for category, message in messages %}
+          <div class="flash flash-{{ category }}">{{ message }}</div>
+        {% endfor %}
+      {% endif %}
+    {% endwith %}
+
+    <div class="table-card">
+      <table class="data-table">
+        <thead>
+          <tr><th>#</th><th>Role</th><th>Description</th><th>Permissions</th><th>Actions</th></tr>
+        </thead>
+        <tbody>
+          {% for role in roles_list %}
+            <tr>
+              <td>{{ roles_page.start_index + loop.index0 if roles_page else loop.index }}</td>
+              <td>{{ role.name|title }}</td>
+              <td>{{ role.description or "-" }}</td>
+              <td>{{ role.permissions }}</td>
+              <td class="table-actions">
+                <button class="ghost-btn" type="button" data-dialog-open="edit-role-{{ role.id }}">Edit</button>
+                {% if role.name != 'admin' %}
+                <form method="post" action="{{ url_for('main.delete_role', role_id=role.id) }}">
+                  <button class="ghost-btn" type="submit">Delete</button>
+                </form>
+                {% endif %}
+              </td>
+            </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+    {% if roles_page and roles_page.total_pages > 1 %}
+      <div class="table-pagination">
+        <span>Showing {{ roles_page.start_index }}-{{ roles_page.start_index + roles_page.items|length - 1 if roles_page.items else 0 }} of {{ roles_page.total }}</span>
+        <div class="pagination-actions">
+          <a class="ghost-btn {% if not roles_page.has_prev %}disabled{% endif %}" href="{{ url_for('main.roles_page', page=roles_page.prev_page) }}">Previous</a>
+          <span>Page {{ roles_page.page }} of {{ roles_page.total_pages }}</span>
+          <a class="ghost-btn {% if not roles_page.has_next %}disabled{% endif %}" href="{{ url_for('main.roles_page', page=roles_page.next_page) }}">Next</a>
+        </div>
+      </div>
+    {% endif %}
+  </section>
+</main>
+
+<dialog id="role-dialog" class="portal-dialog">
+  <form method="post" action="{{ url_for('main.create_role') }}" class="dialog-card">
+    <div class="dialog-head">
+      <h3>Create Role</h3>
+      <button type="button" class="ghost-btn" data-dialog-close>Close</button>
+    </div>
+    <label><span>Role name</span><input type="text" name="name" required></label>
+    <label><span>Description</span><input type="text" name="description"></label>
+    <div class="permission-grid">
+      {% for value, label in permission_choices %}
+        <label class="check-pill">
+          <input type="checkbox" name="permissions" value="{{ value }}">
+          <span>{{ label }}</span>
+        </label>
+      {% endfor %}
+    </div>
+    <div class="dialog-actions">
+      <button type="button" class="ghost-btn" data-dialog-close>Cancel</button>
+      <button type="submit" class="primary-btn">Create Role</button>
+    </div>
+  </form>
+</dialog>
+
+{% for role in roles_list %}
+<dialog id="edit-role-{{ role.id }}" class="portal-dialog">
+  <form method="post" action="{{ url_for('main.update_role', role_id=role.id) }}" class="dialog-card">
+    <div class="dialog-head">
+      <h3>Edit Role</h3>
+      <button type="button" class="ghost-btn" data-dialog-close>Close</button>
+    </div>
+    <label><span>Description</span><input type="text" name="description" value="{{ role.description or '' }}"></label>
+    <div class="permission-grid">
+      {% set role_permissions = role.permissions | loads_json %}
+      {% for value, label in permission_choices %}
+        <label class="check-pill">
+          <input type="checkbox" name="permissions" value="{{ value }}" {% if value in role_permissions %}checked{% endif %}>
+          <span>{{ label }}</span>
+        </label>
+      {% endfor %}
+    </div>
+    <div class="dialog-actions">
+      <button type="button" class="ghost-btn" data-dialog-close>Cancel</button>
+      <button type="submit" class="primary-btn">Save Changes</button>
+    </div>
+  </form>
+</dialog>
+{% endfor %}
+{% endblock %}

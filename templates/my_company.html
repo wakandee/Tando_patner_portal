@@ -1,0 +1,140 @@
+{% extends "base.html" %}
+{% set title = "My Company | TANDO Partner Portal" %}
+
+{% block body %}
+<header class="topbar">
+  <div class="topbar-brand">
+    <img class="brand-logo mark-only" src="{{ url_for('static', filename='img/tando-mark.png') }}" alt="Tando" />
+    <div class="topbar-title">
+      <strong>PARTNER PORTAL</strong>
+      <span>My company</span>
+    </div>
+  </div>
+  <div class="account-wrap">
+    <div class="notification-wrap">
+      <button type="button" class="notification-button" data-notification-toggle aria-label="Notifications">
+        {% include "icons/bell.svg" %}
+        {% if unread_notifications %}
+          <span class="notification-badge">{{ unread_notifications }}</span>
+        {% endif %}
+      </button>
+      <div class="notification-menu" data-notification-menu>
+        <div class="notification-menu-head">
+          <strong>Notifications</strong>
+          <span>{{ unread_notifications }} unread</span>
+        </div>
+        <div class="notification-list">
+          {% for notification in recent_notifications %}
+            <form method="post" action="{{ url_for('main.read_notification', notification_id=notification.id) }}">
+              <button type="submit" class="notification-item {% if not notification.is_read %}unread{% endif %}">
+                <strong>{{ notification.title }}</strong>
+                <span>{{ notification.message }}</span>
+                <small>{{ notification.created_at.strftime("%Y-%m-%d %H:%M") }}</small>
+              </button>
+            </form>
+          {% else %}
+            <div class="notification-item">
+              <strong>No notifications yet</strong>
+              <span>You’ll see ticket updates here.</span>
+            </div>
+          {% endfor %}
+        </div>
+      </div>
+    </div>
+    <button type="button" class="account-button" data-account-toggle>
+      <span class="account-icon">{{ user_name[:1] if user_name else "A" }}</span>
+      <span>{{ user_name }}</span>
+    </button>
+    <div class="account-menu" data-account-menu>
+      <div class="account-menu-head">
+        <strong>{{ user_name }}</strong>
+        <span>{{ user_email }}</span>
+      </div>
+      <div class="account-menu-actions">
+        <a class="ghost-btn" href="{{ url_for('main.account_settings') }}">Account Settings</a>
+        <a class="ghost-btn" href="{{ url_for('main.my_company') }}">My company</a>
+        <form method="post" action="{{ url_for('main.logout') }}">
+          <button type="submit" class="primary-btn">Log out</button>
+        </form>
+      </div>
+    </div>
+  </div>
+</header>
+
+<main class="app-shell">
+  <aside class="sidebar">
+    <nav class="side-nav">
+      <a class="nav-item {% if active_nav == 'dashboard' %}active{% endif %}" href="{{ url_for('main.dashboard') }}"><span class="nav-icon">{% include "icons/dashboard.svg" %}</span><span>Dashboard</span></a>
+      <a class="nav-item" href="{{ url_for('main.contacts') }}"><span class="nav-icon">{% include "icons/users.svg" %}</span><span>Contacts</span></a>
+      <a class="nav-item {% if active_nav == 'users' %}active{% endif %}" href="{{ url_for('main.users') }}"><span class="nav-icon">{% include "icons/users.svg" %}</span><span>Users</span></a>
+      {% if is_tando_admin %}
+      <a class="nav-item {% if active_nav == 'tickets' %}active{% endif %}" href="{{ url_for('main.tickets') }}"><span class="nav-icon">{% include "icons/tickets.svg" %}</span><span>Tickets</span></a>
+      <a class="nav-item {% if active_nav == 'companies' %}active{% endif %}" href="{{ url_for('main.companies') }}"><span class="nav-icon">{% include "icons/companies.svg" %}</span><span>Companies</span></a>
+      <a class="nav-item {% if active_nav == 'roles' %}active{% endif %}" href="{{ url_for('main.roles_page') }}"><span class="nav-icon">{% include "icons/roles.svg" %}</span><span>Roles</span></a>
+      {% endif %}
+    </nav>
+    <div class="survey-card">
+      <h4>We value your opinion!</h4>
+      <p>Share your feedback with us.</p>
+      <button type="button" class="primary-btn survey-action">Send Feedback {% include "icons/external-link.svg" %}</button>
+    </div>
+  </aside>
+
+  <section class="content-pane standalone-page">
+    <div class="page-head">
+      <div>
+        <h2>My company</h2>
+        <p>Company overview and team members.</p>
+      </div>
+    </div>
+
+    {% with messages = get_flashed_messages(with_categories=true) %}
+      {% if messages %}
+        {% for category, message in messages %}
+          <div class="flash flash-{{ category }}">{{ message }}</div>
+        {% endfor %}
+      {% endif %}
+    {% endwith %}
+
+    <section class="panel-card">
+      <h3>Company details</h3>
+      {% if company %}
+        <div class="panel-row"><span>Name</span><strong>{{ company.name }}</strong></div>
+        <div class="panel-row"><span>Code</span><strong>{{ company.code }}</strong></div>
+        <div class="panel-row"><span>Contact</span><strong>{{ company.contact_email or "-" }}</strong></div>
+      {% endif %}
+    </section>
+
+    <section class="panel-card">
+      <h3>Users</h3>
+      <div class="table-card">
+        <table class="data-table">
+          <thead>
+            <tr><th>#</th><th>Name</th><th>Email</th><th>Status</th></tr>
+          </thead>
+          <tbody>
+            {% for item in company_users %}
+              <tr>
+                <td>{{ company_users_page.start_index + loop.index0 if company_users_page else loop.index }}</td>
+                <td>{{ item.full_name }}</td>
+                <td>{{ item.email }}</td>
+                <td>{{ "Active" if item.is_active else "Disabled" }}</td>
+              </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+      {% if company_users_page and company_users_page.total_pages > 1 %}
+        <div class="table-pagination">
+          <span>Showing {{ company_users_page.start_index }}-{{ company_users_page.start_index + company_users_page.items|length - 1 if company_users_page.items else 0 }} of {{ company_users_page.total }}</span>
+          <div class="pagination-actions">
+            <a class="ghost-btn {% if not company_users_page.has_prev %}disabled{% endif %}" href="{{ url_for('main.my_company', page=company_users_page.prev_page) }}">Previous</a>
+            <span>Page {{ company_users_page.page }} of {{ company_users_page.total_pages }}</span>
+            <a class="ghost-btn {% if not company_users_page.has_next %}disabled{% endif %}" href="{{ url_for('main.my_company', page=company_users_page.next_page) }}">Next</a>
+          </div>
+        </div>
+      {% endif %}
+    </section>
+  </section>
+</main>
+{% endblock %}
