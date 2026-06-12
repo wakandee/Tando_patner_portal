@@ -57,7 +57,9 @@ def seed_initial_data(app):
         admin_user = User(
             full_name=app.config["INITIAL_ADMIN_NAME"],
             email=admin_email,
-            password_hash=generate_password_hash(app.config["INITIAL_ADMIN_PASSWORD"]),
+            password_hash=generate_password_hash(
+                app.config["INITIAL_ADMIN_PASSWORD"], method="pbkdf2:sha256"
+            ),
             company_id=tando_company.id,
             role_id=admin_role.id,
         )

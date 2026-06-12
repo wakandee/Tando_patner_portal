@@ -250,7 +250,7 @@ def update_account_password():
     if len(new_password) < 6:
         flash("New password must be at least 6 characters.", "error")
         return redirect(url_for("main.account_settings"))
-    user.password_hash = generate_password_hash(new_password)
+    user.password_hash = generate_password_hash(new_password, method="pbkdf2:sha256")
     db.session.commit()
     flash("Password updated successfully.", "success")
     return redirect(url_for("main.account_settings"))
@@ -479,7 +479,7 @@ def create_user():
     user = User(
         full_name=full_name,
         email=email,
-        password_hash=generate_password_hash(password),
+        password_hash=generate_password_hash(password, method="pbkdf2:sha256"),
         company_id=company.id,
         role_id=role.id,
     )
@@ -672,7 +672,7 @@ def create_company():
     admin_user = User(
         full_name=admin_name,
         email=admin_email,
-        password_hash=generate_password_hash(admin_password),
+        password_hash=generate_password_hash(admin_password, method="pbkdf2:sha256"),
         company_id=company.id,
         role_id=role.id,
     )

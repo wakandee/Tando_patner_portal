@@ -1,12 +1,33 @@
 import os
+from urllib.parse import quote_plus
+
+
+def _build_database_uri():
+    database_url = os.getenv("DATABASE_URL")
+    if database_url:
+        return database_url
+
+    db_user = os.getenv("DB_USER", "root")
+    db_password = os.getenv("DB_PASSWORD", "")
+    db_host = os.getenv("DB_HOST", "127.0.0.1")
+    db_port = os.getenv("DB_PORT", "3306")
+    db_name = os.getenv("DB_NAME", "tando_patner_portal")
+    db_extra = os.getenv("DB_EXTRA", "")
+
+    credentials = quote_plus(db_user)
+    if db_password:
+        credentials = f"{credentials}:{quote_plus(db_password)}"
+
+    uri = f"mysql+pymysql://{credentials}@{db_host}:{db_port}/{db_name}"
+    if db_extra:
+        separator = "&" if "?" in uri else "?"
+        uri = f"{uri}{separator}{db_extra.lstrip('?&')}"
+    return uri
 
 
 def configure_app(app):
     app.config["SECRET_KEY"] = os.getenv("SECRET_KEY", "dev-only-change-me")
-    app.config["SQLALCHEMY_DATABASE_URI"] = os.getenv(
-        "DATABASE_URL",
-        "mysql+pymysql://root:@127.0.0.1:3306/tando_patner_portal",
-    )
+    app.config["SQLALCHEMY_DATABASE_URI"] = _build_database_uri()
     app.config["SQLALCHEMY_TRACK_MODIFICATIONS"] = False
     app.config["INITIAL_ADMIN_NAME"] = os.getenv("INITIAL_ADMIN_NAME", "Tando Admin")
     app.config["INITIAL_ADMIN_EMAIL"] = os.getenv("INITIAL_ADMIN_EMAIL", "admin@tando.co.ke")

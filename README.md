@@ -80,7 +80,7 @@ Create a MySQL database named:
 tando_patner_portal
 ```
 
-The application reads its database connection from `DATABASE_URL` in `.env`.
+The application reads its database connection from `DATABASE_URL` if it is set. Otherwise it builds a MySQL connection from the split variables in `.env`.
 
 ### 4. Configure environment variables
 
@@ -120,9 +120,38 @@ Important environment variables:
 
 - `SECRET_KEY`
 - `DATABASE_URL`
+- `DB_HOST`
+- `DB_PORT`
+- `DB_NAME`
+- `DB_USER`
+- `DB_PASSWORD`
 - `INITIAL_ADMIN_NAME`
 - `INITIAL_ADMIN_EMAIL`
 - `INITIAL_ADMIN_PASSWORD`
+
+## Deployment Files
+
+For a Passenger-based deployment, upload the application source files plus the Passenger entrypoint [`passenger_wsgi.py`](/D:/KINDE/Tando/Patner_portal/passenger_wsgi.py).
+
+Upload these folders and files:
+
+- `app.py`
+- `passenger_wsgi.py`
+- `portal/`
+- `migrations/`
+- `static/`
+- `templates/`
+- `requirements.txt`
+- `.env` on the server only, not in source control
+
+Do not upload these:
+
+- `.venv/`
+- `__pycache__/`
+- `.pytest_cache/`
+- local SQLite or DB files
+- `.env` from your local machine
+- editor and OS junk files
 
 ## Default Seeded Admin
 
