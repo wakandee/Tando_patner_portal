@@ -1,0 +1,123 @@
+{% extends "base.html" %}
+{% set title = "Login Attempts | TANDO Partner Portal" %}
+
+{% block body %}
+<header class="topbar">
+  <div class="topbar-brand">
+    <img class="brand-logo mark-only" src="{{ url_for('static', filename='img/tando-mark.png') }}" alt="Tando" />
+    <div class="topbar-title">
+      <strong>PARTNER PORTAL</strong>
+      <span>Login Attempts</span>
+    </div>
+  </div>
+  <div class="account-wrap">
+    <button type="button" class="account-button" data-account-toggle>
+      <span class="account-icon">{{ user_name[:1] if user_name else "A" }}</span>
+      <span>{{ user_name }}</span>
+    </button>
+    <div class="account-menu" data-account-menu>
+      <div class="account-menu-head">
+        <strong>{{ user_name }}</strong>
+        <span>{{ user_email }}</span>
+      </div>
+      <div class="account-menu-actions">
+        <a class="ghost-btn" href="{{ url_for('main.account_settings') }}">Account Settings</a>
+        <a class="ghost-btn" href="{{ url_for('main.my_company') }}">My company</a>
+        <form method="post" action="{{ url_for('main.logout') }}">
+          <button type="submit" class="primary-btn">Log out</button>
+        </form>
+      </div>
+    </div>
+  </div>
+</header>
+<main class="app-shell">
+  <aside class="sidebar">
+    <nav class="side-nav">
+      <a class="nav-item" href="{{ url_for('main.dashboard') }}"><span class="nav-icon">{% include "icons/dashboard.svg" %}</span><span>Dashboard</span></a>
+      <a class="nav-item" href="{{ url_for('main.tickets') }}"><span class="nav-icon">{% include "icons/tickets.svg" %}</span><span>Tickets</span></a>
+      <a class="nav-item" href="{{ url_for('main.contacts') }}"><span class="nav-icon">{% include "icons/users.svg" %}</span><span>Contacts</span></a>
+      <a class="nav-item" href="{{ url_for('main.users') }}"><span class="nav-icon">{% include "icons/users.svg" %}</span><span>Users</span></a>
+      {% if is_tando_admin %}
+      <a class="nav-item" href="{{ url_for('main.companies') }}"><span class="nav-icon">{% include "icons/companies.svg" %}</span><span>Companies</span></a>
+      <a class="nav-item" href="{{ url_for('main.roles_page') }}"><span class="nav-icon">{% include "icons/roles.svg" %}</span><span>Roles</span></a>
+      {% endif %}
+      {% if can_view_login_attempts %}
+      <a class="nav-item active" href="{{ url_for('main.login_attempts') }}"><span class="nav-icon">{% include "icons/bell.svg" %}</span><span>Login Attempts</span></a>
+      {% endif %}
+    </nav>
+  </aside>
+
+  <section class="content-pane">
+    <div class="page-head">
+      <div>
+        <h2>Login Attempts</h2>
+        <p>Review successful and failed sign-ins, plus IP, browser, and device details.</p>
+      </div>
+    </div>
+
+    {% with messages = get_flashed_messages(with_categories=true) %}
+      {% if messages %}
+        {% for category, message in messages %}
+          <div class="flash flash-{{ category }}">{{ message }}</div>
+        {% endfor %}
+      {% endif %}
+    {% endwith %}
+
+    <div class="table-card" style="margin-bottom: 1rem;">
+      <form method="get" action="{{ url_for('main.login_attempts') }}" class="dialog-card" style="padding: 1rem; gap: 0.75rem;">
+        <div class="dialog-head">
+          <h3>Filters</h3>
+          <a class="ghost-btn" href="{{ url_for('main.login_attempts') }}">Clear</a>
+        </div>
+        <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 0.75rem;">
+          <label><span>Email contains</span><input type="text" name="email" value="{{ filters.email }}" placeholder="Search by email"></label>
+          <label>
+            <span>Outcome</span>
+            <select name="outcome">
+              <option value="" {% if not filters.outcome %}selected{% endif %}>All</option>
+              <option value="success" {% if filters.outcome == 'success' %}selected{% endif %}>Success</option>
+              <option value="failure" {% if filters.outcome == 'failure' %}selected{% endif %}>Failure</option>
+            </select>
+          </label>
+        </div>
+        <div class="dialog-actions">
+          <button type="submit" class="primary-btn">Apply Filters</button>
+        </div>
+      </form>
+    </div>
+
+    <div class="table-card">
+      <table class="data-table">
+        <thead>
+          <tr><th>#</th><th>Email</th><th>Status</th><th>Reason</th><th>IP</th><th>Browser</th><th>Device</th><th>When</th></tr>
+        </thead>
+        <tbody>
+          {% for item in login_attempts_list %}
+            <tr>
+              <td>{{ login_attempts_page.start_index + loop.index0 if login_attempts_page else loop.index }}</td>
+              <td>{{ item.email }}</td>
+              <td>{{ "Success" if item.success else "Failed" }}</td>
+              <td>{{ item.failure_reason or "-" }}</td>
+              <td>{{ item.ip_address or "-" }}</td>
+              <td>{{ item.browser or "-" }}</td>
+              <td>{{ item.device_type or "-" }}</td>
+              <td>{{ item.created_at.strftime("%Y-%m-%d %H:%M") }}</td>
+            </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+
+    {% if login_attempts_page and login_attempts_page.total_pages > 1 %}
+      <div class="table-pagination">
+        <span>Showing {{ login_attempts_page.start_index }}-{{ login_attempts_page.start_index + login_attempts_page.items|length - 1 if login_attempts_page.items else 0 }} of {{ login_attempts_page.total }}</span>
+        <div class="pagination-actions">
+          <a class="ghost-btn {% if not login_attempts_page.has_prev %}disabled{% endif %}" href="{{ url_for('main.login_attempts', page=login_attempts_page.prev_page, email=filters.email, outcome=filters.outcome) }}">Previous</a>
+          <span>Page {{ login_attempts_page.page }} of {{ login_attempts_page.total_pages }}</span>
+          <a class="ghost-btn {% if not login_attempts_page.has_next %}disabled{% endif %}" href="{{ url_for('main.login_attempts', page=login_attempts_page.next_page, email=filters.email, outcome=filters.outcome) }}">Next</a>
+        </div>
+      </div>
+    {% endif %}
+  </section>
+</main>
+{% endblock %}

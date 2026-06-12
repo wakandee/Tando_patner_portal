@@ -21,6 +21,7 @@ ALL_PERMISSIONS = [
     "roles.edit",
     "settings.view",
     "settings.edit",
+    "login_attempts.view",
 ]
 
 

@@ -27,6 +27,7 @@ def _build_database_uri():
 
 def configure_app(app):
     app.config["SECRET_KEY"] = os.getenv("SECRET_KEY", "dev-only-change-me")
+    app.config["DEBUG"] = False
     app.config["SQLALCHEMY_DATABASE_URI"] = _build_database_uri()
     app.config["SQLALCHEMY_TRACK_MODIFICATIONS"] = False
     app.config["INITIAL_ADMIN_NAME"] = os.getenv("INITIAL_ADMIN_NAME", "Tando Admin")

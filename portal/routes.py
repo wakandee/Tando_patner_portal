@@ -7,7 +7,7 @@ from flask import Blueprint, flash, redirect, render_template, request, session,
 from werkzeug.security import check_password_hash, generate_password_hash
 
 from portal.extensions import db
-from portal.models import Company, Notification, Role, Ticket, TicketUpdate, User
+from portal.models import Company, LoginAttempt, Notification, Role, Ticket, TicketUpdate, User
 
 
 main_bp = Blueprint("main", __name__)
@@ -27,6 +27,7 @@ PERMISSION_CHOICES = [
     ("roles.edit", "Edit roles"),
     ("settings.view", "View settings"),
     ("settings.edit", "Edit settings"),
+    ("login_attempts.view", "View login attempts"),
 ]
 TABLE_PAGE_SIZE = 10
 
@@ -129,6 +130,7 @@ def render_app_page(template, **context):
         current_user=user,
         current_permissions=json.loads(user.role.permissions or "[]") if user else [],
         is_tando_admin=is_tando_admin(user),
+        can_view_login_attempts=bool(user and "login_attempts.view" in json.loads(user.role.permissions or "[]")),
         unread_notifications=unread_notifications,
         recent_notifications=recent_notifications,
         **context,
@@ -184,6 +186,71 @@ def parent_company_users():
     return User.query.filter_by(company_id=company.id, is_active=True).all()
 
 
+def detect_browser_and_device():
+    ua_string = request.headers.get("User-Agent", "") or ""
+    ua_lower = ua_string.lower()
+
+    browser = "Unknown"
+    browser_signatures = [
+        ("Edge", "edg/"),
+        ("Edge", "edge/"),
+        ("Opera", "opr/"),
+        ("Brave", "brave/"),
+        ("Chrome", "chrome/"),
+        ("Firefox", "firefox/"),
+        ("Safari", "safari/"),
+    ]
+    for name, signature in browser_signatures:
+        if signature in ua_lower:
+            browser = name
+            break
+
+    if browser == "Safari" and "chrome/" in ua_lower:
+        browser = "Chrome"
+
+    device_type = "Desktop"
+    if "tablet" in ua_lower or "ipad" in ua_lower:
+        device_type = "Tablet"
+    elif any(token in ua_lower for token in ["mobi", "android", "iphone", "ipod", "phone"]):
+        device_type = "Mobile"
+
+    if browser == "Unknown" and ua_string:
+        browser = ua_string.split(" ", 1)[0][:120]
+
+    return browser[:120], device_type[:80]
+
+
+def log_login_attempt(email, success, user=None, failure_reason=None):
+    forwarded_for = request.headers.get("X-Forwarded-For", "")
+    ip_address = forwarded_for.split(",")[0].strip() if forwarded_for else request.remote_addr
+    browser, device_type = detect_browser_and_device()
+    attempt = LoginAttempt(
+        email=email,
+        user_id=user.id if user else None,
+        success=success,
+        failure_reason=failure_reason,
+        ip_address=ip_address,
+        browser=browser,
+        device_type=device_type,
+        user_agent=(request.headers.get("User-Agent", "") or "")[:255],
+    )
+    db.session.add(attempt)
+    db.session.flush()
+    from flask import current_app
+
+    current_app.logger.info(
+        "login_attempt success=%s email=%s user_id=%s ip=%s browser=%s device=%s reason=%s",
+        success,
+        email,
+        user.id if user else None,
+        attempt.ip_address,
+        browser,
+        device_type,
+        failure_reason or "",
+    )
+    return attempt
+
+
 @main_bp.get("/")
 def index():
     if current_user():
@@ -197,14 +264,22 @@ def login():
     password = request.form.get("password", "")
     if not email or not password:
         flash("Email and password are required.", "error")
+        db.session.rollback()
+        log_login_attempt(email or "", False, failure_reason="missing_credentials")
+        db.session.commit()
         return render_app_page("login.html", email=email), 400
     user = User.query.filter_by(email=email, is_active=True).first()
     if not user or not check_password_hash(user.password_hash, password):
         flash("Invalid credentials. Please try again.", "error")
+        db.session.rollback()
+        log_login_attempt(email, False, user=user if user else None, failure_reason="invalid_credentials")
+        db.session.commit()
         return render_app_page("login.html", email=email), 401
+    log_login_attempt(email, True, user=user, failure_reason=None)
     session["user_id"] = user.id
     session["user_email"] = user.email
     session["user_name"] = user.full_name
+    db.session.commit()
     flash("You have been signed in.", "success")
     return redirect(url_for("main.dashboard"))
 
@@ -792,9 +867,41 @@ def respond_to_ticket(ticket_id):
 @main_bp.post("/logout")
 @login_required
 def logout():
+    user = current_user()
+    if user:
+        from flask import current_app
+
+        current_app.logger.info("logout user_id=%s email=%s", user.id, user.email)
     session.clear()
     flash("You have been signed out.", "success")
     return redirect(url_for("main.index"))
+
+
+@main_bp.get("/login-attempts")
+@login_required
+@permission_required("login_attempts.view")
+def login_attempts():
+    user = current_user()
+    page = request.args.get("page", 1, type=int)
+    email_filter = request.args.get("email", "").strip().lower()
+    outcome = request.args.get("outcome", "").strip()
+    attempts_query = LoginAttempt.query.order_by(LoginAttempt.created_at.desc())
+    if email_filter:
+        attempts_query = attempts_query.filter(LoginAttempt.email.ilike(f"%{email_filter}%"))
+    if outcome == "success":
+        attempts_query = attempts_query.filter_by(success=True)
+    elif outcome == "failure":
+        attempts_query = attempts_query.filter_by(success=False)
+    attempts_page = paginate_query(attempts_query, page)
+    return render_app_page(
+        "login_attempts.html",
+        active_nav="login_attempts",
+        user_email=user.email,
+        user_name=user.full_name,
+        login_attempts_list=attempts_page["items"],
+        login_attempts_page=attempts_page,
+        filters={"email": email_filter, "outcome": outcome},
+    )
 
 
 @main_bp.post("/notifications/<int:notification_id>/read")

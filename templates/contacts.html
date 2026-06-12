@@ -72,6 +72,9 @@
       <a class="nav-item" href="{{ url_for('main.companies') }}"><span class="nav-icon">{% include "icons/companies.svg" %}</span><span>Companies</span></a>
       <a class="nav-item" href="{{ url_for('main.roles_page') }}"><span class="nav-icon">{% include "icons/roles.svg" %}</span><span>Roles</span></a>
       {% endif %}
+      {% if can_view_login_attempts %}
+      <a class="nav-item {% if active_nav == 'login_attempts' %}active{% endif %}" href="{{ url_for('main.login_attempts') }}"><span class="nav-icon">{% include "icons/bell.svg" %}</span><span>Login Attempts</span></a>
+      {% endif %}
     </nav>
     <div class="survey-card">
       <h4>We value your opinion!</h4>

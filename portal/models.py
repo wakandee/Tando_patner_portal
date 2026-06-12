@@ -72,3 +72,18 @@ class Notification(db.Model):
 
     user = db.relationship("User", backref=db.backref("notifications", lazy="dynamic", cascade="all, delete-orphan"))
     ticket = db.relationship("Ticket")
+
+
+class LoginAttempt(db.Model):
+    id = db.Column(db.Integer, primary_key=True)
+    email = db.Column(db.String(255), nullable=False, index=True)
+    user_id = db.Column(db.Integer, db.ForeignKey("user.id"), nullable=True, index=True)
+    success = db.Column(db.Boolean, nullable=False, default=False)
+    failure_reason = db.Column(db.String(120), nullable=True)
+    ip_address = db.Column(db.String(64), nullable=True)
+    browser = db.Column(db.String(120), nullable=True)
+    device_type = db.Column(db.String(80), nullable=True)
+    user_agent = db.Column(db.String(255), nullable=True)
+    created_at = db.Column(db.DateTime, nullable=False, default=lambda: datetime.now(timezone.utc))
+
+    user = db.relationship("User")

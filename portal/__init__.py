@@ -1,6 +1,9 @@
+import logging
+
 from flask import Flask
 from dotenv import load_dotenv
 from flask_migrate import Migrate
+from pathlib import Path
 import json
 
 from portal.config import configure_app
@@ -10,13 +13,20 @@ from portal.seed import seed_initial_data
 
 
 def create_app():
-    load_dotenv()
+    load_dotenv(Path(__file__).resolve().parent.parent / ".env")
 
     app = Flask(__name__, template_folder="../templates", static_folder="../static")
     configure_app(app)
     db.init_app(app)
     Migrate(app, db)
     app.register_blueprint(main_bp)
+    if not app.logger.handlers:
+        handler = logging.StreamHandler()
+        handler.setLevel(logging.INFO)
+        handler.setFormatter(logging.Formatter("%(asctime)s %(levelname)s %(name)s: %(message)s"))
+        app.logger.addHandler(handler)
+        app.logger.setLevel(logging.INFO)
+        app.logger.propagate = False
 
     @app.template_filter("loads_json")
     def loads_json(value):
