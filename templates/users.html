@@ -3,6 +3,11 @@
 
 {% block body %}
 <header class="topbar">
+  <button type="button" class="sidebar-toggle" data-sidebar-toggle aria-label="Open navigation">
+    <span></span>
+    <span></span>
+    <span></span>
+  </button>
   <div class="topbar-brand">
     <img class="brand-logo mark-only" src="{{ url_for('static', filename='img/tando-mark.png') }}" alt="Tando" />
     <div class="topbar-title">
@@ -100,20 +105,20 @@
     {% endwith %}
 
     <div class="table-card">
-      <table class="data-table">
+      <table class="data-table mobile-card-table">
         <thead>
           <tr><th>#</th><th>Name</th><th>Email</th><th>Company</th><th>Role</th><th>Status</th><th>Actions</th></tr>
         </thead>
         <tbody>
           {% for item in users_list %}
             <tr>
-              <td>{{ users_page.start_index + loop.index0 if users_page else loop.index }}</td>
-              <td>{{ item.full_name }}</td>
-              <td>{{ item.email }}</td>
-              <td>{{ item.company.name if item.company else "-" }}</td>
-              <td>{{ item.role.name|title }}</td>
-              <td>{{ "Active" if item.is_active else "Disabled" }}</td>
-              <td class="table-actions">
+              <td data-label="#">{{ users_page.start_index + loop.index0 if users_page else loop.index }}</td>
+              <td data-label="Name">{{ item.full_name }}</td>
+              <td data-label="Email">{{ item.email }}</td>
+              <td data-label="Company">{{ item.company.name if item.company else "-" }}</td>
+              <td data-label="Role">{{ item.role.name|title }}</td>
+              <td data-label="Status">{{ "Active" if item.is_active else "Disabled" }}</td>
+              <td data-label="Actions" class="table-actions">
                 <button class="ghost-btn" type="button" data-dialog-open="edit-user-{{ item.id }}">Edit</button>
                 <form method="post" action="{{ url_for('main.toggle_user', user_id=item.id) }}">
                   <button class="ghost-btn" type="submit">{{ "Disable" if item.is_active else "Enable" }}</button>
@@ -123,6 +128,28 @@
           {% endfor %}
         </tbody>
       </table>
+    </div>
+    <div class="mobile-record-list">
+      {% for item in users_list %}
+        <article class="mobile-record-card">
+          <div class="mobile-record-head">
+            <strong>{{ item.full_name }}</strong>
+            <span>{{ "Active" if item.is_active else "Disabled" }}</span>
+          </div>
+          <div class="mobile-record-grid">
+            <div><span>Name</span><strong>{{ item.full_name }}</strong></div>
+            <div><span>Email</span><strong>{{ item.email }}</strong></div>
+            <div><span>Company</span><strong>{{ item.company.name if item.company else "-" }}</strong></div>
+            <div><span>Role</span><strong>{{ item.role.name|title }}</strong></div>
+          </div>
+          <div class="mobile-record-actions">
+            <button class="ghost-btn" type="button" data-dialog-open="edit-user-{{ item.id }}">Edit</button>
+            <form method="post" action="{{ url_for('main.toggle_user', user_id=item.id) }}">
+              <button class="ghost-btn" type="submit">{{ "Disable" if item.is_active else "Enable" }}</button>
+            </form>
+          </div>
+        </article>
+      {% endfor %}
     </div>
     {% if users_page and users_page.total_pages > 1 %}
       <div class="table-pagination">

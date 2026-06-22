@@ -3,6 +3,11 @@
 
 {% block body %}
 <header class="topbar">
+  <button type="button" class="sidebar-toggle" data-sidebar-toggle aria-label="Open navigation">
+    <span></span>
+    <span></span>
+    <span></span>
+  </button>
   <div class="topbar-brand">
     <img class="brand-logo mark-only" src="{{ url_for('static', filename='img/tando-mark.png') }}" alt="Tando" />
     <div class="topbar-title">
@@ -100,18 +105,18 @@
     {% endwith %}
 
     <div class="table-card">
-      <table class="data-table">
+      <table class="data-table mobile-card-table">
         <thead>
           <tr><th>#</th><th>Role</th><th>Description</th><th>Permissions</th><th>Actions</th></tr>
         </thead>
         <tbody>
           {% for role in roles_list %}
             <tr>
-              <td>{{ roles_page.start_index + loop.index0 if roles_page else loop.index }}</td>
-              <td>{{ role.name|title }}</td>
-              <td>{{ role.description or "-" }}</td>
-              <td>{{ role.permissions }}</td>
-              <td class="table-actions">
+              <td data-label="#">{{ roles_page.start_index + loop.index0 if roles_page else loop.index }}</td>
+              <td data-label="Role">{{ role.name|title }}</td>
+              <td data-label="Description">{{ role.description or "-" }}</td>
+              <td data-label="Permissions">{{ role.permissions }}</td>
+              <td data-label="Actions" class="table-actions">
                 <button class="ghost-btn" type="button" data-dialog-open="edit-role-{{ role.id }}">Edit</button>
                 {% if role.name != 'admin' %}
                 <form method="post" action="{{ url_for('main.delete_role', role_id=role.id) }}">
@@ -123,6 +128,29 @@
           {% endfor %}
         </tbody>
       </table>
+    </div>
+    <div class="mobile-record-list">
+      {% for role in roles_list %}
+        <article class="mobile-record-card">
+          <div class="mobile-record-head">
+            <strong>{{ role.name|title }}</strong>
+            <span>{{ role.description or "Role" }}</span>
+          </div>
+          <div class="mobile-record-grid">
+            <div><span>Role</span><strong>{{ role.name|title }}</strong></div>
+            <div><span>Description</span><strong>{{ role.description or "-" }}</strong></div>
+            <div><span>Permissions</span><strong>{{ role.permissions }}</strong></div>
+          </div>
+          <div class="mobile-record-actions">
+            <button class="ghost-btn" type="button" data-dialog-open="edit-role-{{ role.id }}">Edit</button>
+            {% if role.name != 'admin' %}
+            <form method="post" action="{{ url_for('main.delete_role', role_id=role.id) }}">
+              <button class="ghost-btn" type="submit">Delete</button>
+            </form>
+            {% endif %}
+          </div>
+        </article>
+      {% endfor %}
     </div>
     {% if roles_page and roles_page.total_pages > 1 %}
       <div class="table-pagination">

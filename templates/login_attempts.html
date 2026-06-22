@@ -3,6 +3,11 @@
 
 {% block body %}
 <header class="topbar">
+  <button type="button" class="sidebar-toggle" data-sidebar-toggle aria-label="Open navigation">
+    <span></span>
+    <span></span>
+    <span></span>
+  </button>
   <div class="topbar-brand">
     <img class="brand-logo mark-only" src="{{ url_for('static', filename='img/tando-mark.png') }}" alt="Tando" />
     <div class="topbar-title">
@@ -11,6 +16,36 @@
     </div>
   </div>
   <div class="account-wrap">
+    <div class="notification-wrap">
+      <button type="button" class="notification-button" data-notification-toggle aria-label="Notifications">
+        {% include "icons/bell.svg" %}
+        {% if unread_notifications %}
+          <span class="notification-badge">{{ unread_notifications }}</span>
+        {% endif %}
+      </button>
+      <div class="notification-menu" data-notification-menu>
+        <div class="notification-menu-head">
+          <strong>Notifications</strong>
+          <span>{{ unread_notifications }} unread</span>
+        </div>
+        <div class="notification-list">
+          {% for notification in recent_notifications %}
+            <form method="post" action="{{ url_for('main.read_notification', notification_id=notification.id) }}">
+              <button type="submit" class="notification-item {% if not notification.is_read %}unread{% endif %}">
+                <strong>{{ notification.title }}</strong>
+                <span>{{ notification.message }}</span>
+                <small>{{ notification.created_at.strftime("%Y-%m-%d %H:%M") }}</small>
+              </button>
+            </form>
+          {% else %}
+            <div class="notification-item">
+              <strong>No notifications yet</strong>
+              <span>You'll see ticket updates here.</span>
+            </div>
+          {% endfor %}
+        </div>
+      </div>
+    </div>
     <button type="button" class="account-button" data-account-toggle>
       <span class="account-icon">{{ user_name[:1] if user_name else "A" }}</span>
       <span>{{ user_name }}</span>
@@ -64,12 +99,12 @@
     {% endwith %}
 
     <div class="table-card" style="margin-bottom: 1rem;">
-      <form method="get" action="{{ url_for('main.login_attempts') }}" class="dialog-card" style="padding: 1rem; gap: 0.75rem;">
+      <form method="get" action="{{ url_for('main.login_attempts') }}" class="dialog-card filter-panel">
         <div class="dialog-head">
           <h3>Filters</h3>
           <a class="ghost-btn" href="{{ url_for('main.login_attempts') }}">Clear</a>
         </div>
-        <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 0.75rem;">
+        <div class="filter-grid">
           <label><span>Email contains</span><input type="text" name="email" value="{{ filters.email }}" placeholder="Search by email"></label>
           <label>
             <span>Outcome</span>

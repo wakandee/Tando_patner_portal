@@ -3,6 +3,11 @@
 
 {% block body %}
 <header class="topbar">
+  <button type="button" class="sidebar-toggle" data-sidebar-toggle aria-label="Open navigation">
+    <span></span>
+    <span></span>
+    <span></span>
+  </button>
   <div class="topbar-brand">
     <img class="brand-logo mark-only" src="{{ url_for('static', filename='img/tando-mark.png') }}" alt="Tando" />
     <div class="topbar-title">

@@ -3,6 +3,11 @@
 
 {% block body %}
 <header class="topbar">
+  <button type="button" class="sidebar-toggle" data-sidebar-toggle aria-label="Open navigation">
+    <span></span>
+    <span></span>
+    <span></span>
+  </button>
   <div class="topbar-brand">
     <img class="brand-logo mark-only" src="{{ url_for('static', filename='img/tando-mark.png') }}" alt="Tando" />
     <div class="topbar-title">
@@ -98,19 +103,19 @@
     {% endwith %}
 
     <div class="table-card">
-      <table class="data-table">
+      <table class="data-table mobile-card-table">
         <thead>
           <tr><th>#</th><th>Name</th><th>Code</th><th>Contact</th><th>Status</th><th>Action</th></tr>
         </thead>
         <tbody>
           {% for company in companies_list %}
             <tr>
-              <td>{{ companies_page.start_index + loop.index0 if companies_page else loop.index }}</td>
-              <td>{{ company.name }}</td>
-              <td>{{ company.code }}</td>
-              <td>{{ company.contact_email or "-" }}</td>
-              <td>{{ "Active" if company.is_active else "Disabled" }}</td>
-              <td class="table-actions">
+              <td data-label="#">{{ companies_page.start_index + loop.index0 if companies_page else loop.index }}</td>
+              <td data-label="Name">{{ company.name }}</td>
+              <td data-label="Code">{{ company.code }}</td>
+              <td data-label="Contact">{{ company.contact_email or "-" }}</td>
+              <td data-label="Status">{{ "Active" if company.is_active else "Disabled" }}</td>
+              <td data-label="Action" class="table-actions">
                 <form method="post" action="{{ url_for('main.toggle_company', company_id=company.id) }}">
                   <button class="ghost-btn" type="submit">{{ "Disable" if company.is_active else "Enable" }}</button>
                 </form>
@@ -119,6 +124,26 @@
           {% endfor %}
         </tbody>
       </table>
+    </div>
+    <div class="mobile-record-list">
+      {% for company in companies_list %}
+        <article class="mobile-record-card">
+          <div class="mobile-record-head">
+            <strong>{{ company.name }}</strong>
+            <span>{{ "Active" if company.is_active else "Disabled" }}</span>
+          </div>
+          <div class="mobile-record-grid">
+            <div><span>Name</span><strong>{{ company.name }}</strong></div>
+            <div><span>Code</span><strong>{{ company.code }}</strong></div>
+            <div><span>Contact</span><strong>{{ company.contact_email or "-" }}</strong></div>
+          </div>
+          <div class="mobile-record-actions">
+            <form method="post" action="{{ url_for('main.toggle_company', company_id=company.id) }}">
+              <button class="ghost-btn" type="submit">{{ "Disable" if company.is_active else "Enable" }}</button>
+            </form>
+          </div>
+        </article>
+      {% endfor %}
     </div>
     {% if companies_page and companies_page.total_pages > 1 %}
       <div class="table-pagination">

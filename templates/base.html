@@ -8,8 +8,21 @@
   </head>
   <body>
     {% block body %}{% endblock %}
+    <div class="drawer-backdrop" data-sidebar-backdrop></div>
     <script>
       document.addEventListener("click", (event) => {
+        const sidebarToggle = event.target.closest("[data-sidebar-toggle]");
+        if (sidebarToggle) {
+          document.body.classList.toggle("sidebar-open");
+          return;
+        }
+
+        const sidebarBackdrop = event.target.closest("[data-sidebar-backdrop]");
+        if (sidebarBackdrop) {
+          document.body.classList.remove("sidebar-open");
+          return;
+        }
+
         const opener = event.target.closest("[data-dialog-open]");
         if (opener) {
           const dialog = document.getElementById(opener.dataset.dialogOpen);
@@ -40,6 +53,17 @@
         }
         if (notificationMenu && !event.target.closest("[data-notification-menu]")) {
           notificationMenu.classList.remove("is-open");
+        }
+
+        const clickedOutsideSidebar = !event.target.closest(".sidebar") && !event.target.closest("[data-sidebar-toggle]");
+        if (clickedOutsideSidebar && document.body.classList.contains("sidebar-open")) {
+          document.body.classList.remove("sidebar-open");
+        }
+      });
+
+      document.addEventListener("keydown", (event) => {
+        if (event.key === "Escape") {
+          document.body.classList.remove("sidebar-open");
         }
       });
 
